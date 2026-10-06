@@ -83,6 +83,7 @@ import kotlin.time.Duration.Companion.milliseconds
 fun HomeScreen(
     modifier: Modifier = Modifier,
     onAppOpened: (app: InstalledApp) -> Unit = {},
+    onShortcutOpened: (app: InstalledApp, shortcutId: String) -> Unit = { _, _ -> },
     onGoHomeRequest: () -> Unit = {},
     clockViewModel: ClockViewModel = hiltViewModel(),
     homeScreenViewModel: NewHomeScreenViewModel = hiltViewModel(),
@@ -128,6 +129,7 @@ fun HomeScreen(
         homeScreenViewModel.uiEvent.collectLatest { event ->
             when (event) {
                 is HomeUiEvent.NavigateHome -> onGoHomeRequest()
+                is HomeUiEvent.OpenShortcut -> onShortcutOpened(event.app, event.shortcutId)
             }
         }
     }
@@ -276,6 +278,9 @@ fun HomeScreen(
                         @Suppress("KotlinConstantConditions", "RedundantSuppression") // This is to stop the IS_FOSS is always true cuz it's a FOSS sync in Android Studio
                         if (!homeScreenViewModel.isFoss) {
                             HomeWeatherImpl(
+                                onOpenApp = { packageName ->
+                                    homeScreenViewModel.findApp(packageName)?.let { onAppOpened(it) }
+                                },
                                 alignment = homeAlignment,
                                 shadow = showWallpaper,
                                 color = if (showWallpaper) MaterialTheme.colorScheme.primaryFixed else MaterialTheme.colorScheme.primary
@@ -416,6 +421,7 @@ fun HomeScreen(
 
 @Composable
 fun HomeWeatherImpl(
+    onOpenApp: (packageName: String) -> Unit,
     alignment: Alignment.Horizontal,
     color: Color = MaterialTheme.colorScheme.primary,
     shadow: Boolean = false,
@@ -440,16 +446,8 @@ fun HomeWeatherImpl(
             color = color,
             onClick = {
                 if (weatherAppPackage.isNotEmpty()) {
-                    //todo: use OpenApp() here so it's tracked
-
-                    val launchIntent =
-                        context.packageManager.getLaunchIntentForPackage(
-                            weatherAppPackage
-                        )
-                    launchIntent?.let {
-                        it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        context.startActivity(it)
-                    }
+                    // Opened like any other app so the countdown, closed times and screen time apply
+                    onOpenApp(weatherAppPackage)
                 } else {
                     Toast.makeText(
                         context,

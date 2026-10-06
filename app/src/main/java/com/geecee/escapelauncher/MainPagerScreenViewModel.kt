@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.geecee.escapelauncher.core.domain.apps.LaunchAppUseCase
+import com.geecee.escapelauncher.core.domain.apps.StartShortcutUseCase
 import com.geecee.escapelauncher.core.domain.apps.TryOpenAppResult
 import com.geecee.escapelauncher.core.domain.apps.TryOpenAppUseCase
 import com.geecee.escapelauncher.core.domain.launcher.GetIsDefaultLauncherUseCase
@@ -49,6 +50,7 @@ class MainPagerScreenViewModel @Inject constructor(
     appPauseSettingsRepository: AppPauseSettingsRepository,
     private val tryOpenAppUseCase: TryOpenAppUseCase,
     private val launchAppUseCase: LaunchAppUseCase,
+    private val startShortcutUseCase: StartShortcutUseCase,
     private val managedProfileExistsUseCase: ManagedProfileExistsUseCase,
     private val isManagedProfileSupportedUseCase: IsManagedProfileSupportedUseCase,
     private val getIsDefaultLauncherUseCase: GetIsDefaultLauncherUseCase,
@@ -86,17 +88,26 @@ class MainPagerScreenViewModel @Inject constructor(
     )
 
     /**
-     * Opens the app the pause was shown for, and if the user planned how long to use it for,
-     * schedules the reminder for when that time is up
+     * Opens the app (or app shortcut) the pause was shown for, and if the user planned how long to
+     * use it for, schedules the reminder for when that time is up
      */
     fun openAppAfterPause(intention: String?, minutes: Int?, onAppOpened: (String) -> Unit) {
         val app = currentSelectedApp.value
-        openApp(app = app, overrideChallenge = true, onAppOpened = { packageName ->
+        val onOpened: (String) -> Unit = { packageName ->
             onAppOpened(packageName)
             if (minutes != null) {
                 sessionCueScheduler.schedule(app.displayName, minutes, intention)
             }
-        })
+        }
+
+        val shortcutId = pendingShortcutId
+        if (shortcutId != null) {
+            if (startShortcut(app, shortcutId, onOpened)) {
+                showOpenChallenge.value = false
+            }
+        } else {
+            openApp(app = app, overrideChallenge = true, onAppOpened = onOpened)
+        }
     }
 
     /**
@@ -124,6 +135,9 @@ class MainPagerScreenViewModel @Inject constructor(
     // Shown instead of the pause during one of the user's closed times
     var showClosedNotice = mutableStateOf(false)
     var closedNoticeReopensAt = mutableStateOf<LocalDateTime?>(null)
+
+    // The app shortcut to start once the pause is over, or null to open the app itself
+    private var pendingShortcutId: String? = null
 
     val interactionSource = MutableInteractionSource()
 
@@ -173,6 +187,7 @@ class MainPagerScreenViewModel @Inject constructor(
     fun dismissOpenChallenge() {
         showOpenChallenge.value = false
         showClosedNotice.value = false
+        pendingShortcutId = null
     }
 
     /**
@@ -199,6 +214,42 @@ class MainPagerScreenViewModel @Inject constructor(
     }
 
     /**
+     * Shows the pause, or the closed notice during a closed time, before opening [app]
+     *
+     * @param shortcutId The app shortcut to start afterwards, or null to open the app itself
+     */
+    private fun holdOpen(app: InstalledApp, result: TryOpenAppResult, shortcutId: String?) {
+        updateSelectedApp(app)
+        pendingShortcutId = shortcutId
+        if (result is TryOpenAppResult.Closed) {
+            closedNoticeReopensAt.value = result.reopensAt
+            showClosedNotice.value = true
+        } else {
+            showOpenChallenge.value = true
+        }
+    }
+
+    /**
+     * Starts one of an app's shortcuts (from the long press menu) with the same countdown and
+     * closed time checks as opening the app
+     */
+    fun openShortcut(app: InstalledApp, shortcutId: String, onAppOpened: (String) -> Unit) {
+        viewModelScope.launch {
+            when (val result = tryOpenAppUseCase(app.packageName)) {
+                TryOpenAppResult.ShowChallenge, is TryOpenAppResult.Closed -> holdOpen(app, result, shortcutId)
+                TryOpenAppResult.Launch -> startShortcut(app, shortcutId, onAppOpened)
+            }
+        }
+    }
+
+    private fun startShortcut(app: InstalledApp, shortcutId: String, onAppOpened: (String) -> Unit): Boolean {
+        if (!startShortcutUseCase(app.packageName, shortcutId)) return false
+        onAppOpened(app.packageName)
+        onAppLaunched(app)
+        return true
+    }
+
+    /**
      * High-level function to open an app, handling challenge checks asynchronously
      */
     fun openApp(
@@ -208,15 +259,7 @@ class MainPagerScreenViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             when (val result = tryOpenAppUseCase(app.packageName, overrideChallenge)) {
-                TryOpenAppResult.ShowChallenge -> {
-                    updateSelectedApp(app)
-                    showOpenChallenge.value = true
-                }
-                is TryOpenAppResult.Closed -> {
-                    updateSelectedApp(app)
-                    closedNoticeReopensAt.value = result.reopensAt
-                    showClosedNotice.value = true
-                }
+                TryOpenAppResult.ShowChallenge, is TryOpenAppResult.Closed -> holdOpen(app, result, shortcutId = null)
                 TryOpenAppResult.Launch -> {
                     if (launchAppUseCase(app, onAppOpened)) {
                         onAppLaunched(app)

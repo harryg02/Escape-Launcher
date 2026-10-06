@@ -46,6 +46,7 @@ fun AppsList(
     modifier: Modifier = Modifier,
     padding: PaddingValues = PaddingValues(),
     onAppOpened: (app: InstalledApp) -> Unit = {},
+    onShortcutOpened: (app: InstalledApp, shortcutId: String) -> Unit = { _, _ -> },
     onGoHomeRequest: () -> Unit = {},
     appsListViewModel: AppsListViewModel = hiltViewModel(),
     screenTimeViewModel: ScreenTimeViewModel = hiltViewModel(LocalActivity.current as ComponentActivity),
@@ -76,6 +77,7 @@ fun AppsList(
         appsListViewModel.uiEvent.collectLatest { event ->
             when (event) {
                 is AppsListUiEvent.NavigateHome -> onGoHomeRequest()
+                is AppsListUiEvent.OpenShortcut -> onShortcutOpened(event.app, event.shortcutId)
             }
         }
     }

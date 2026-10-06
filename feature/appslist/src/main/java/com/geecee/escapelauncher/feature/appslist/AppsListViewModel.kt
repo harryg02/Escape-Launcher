@@ -8,7 +8,6 @@ import com.geecee.escapelauncher.core.domain.apps.AppActionType
 import com.geecee.escapelauncher.core.domain.apps.GetAppActionsUseCase
 import com.geecee.escapelauncher.core.domain.apps.GetAppShortcutsUseCase
 import com.geecee.escapelauncher.core.domain.apps.OpenAppDetailsUseCase
-import com.geecee.escapelauncher.core.domain.apps.StartShortcutUseCase
 import com.geecee.escapelauncher.core.domain.apps.UninstallAppUseCase
 import com.geecee.escapelauncher.core.domain.search.SearchAppsUseCase
 import com.geecee.escapelauncher.core.domain.repository.db.ModifiedAppsRepository
@@ -32,7 +31,6 @@ class AppsListViewModel @Inject constructor(
     private val modifiedAppsRepository: ModifiedAppsRepository,
     private val getAppActionsUseCase: GetAppActionsUseCase,
     private val getAppShortcutsUseCase: GetAppShortcutsUseCase,
-    private val startShortcutUseCase: StartShortcutUseCase,
     private val uninstallAppUseCase: UninstallAppUseCase,
     private val openAppDetailsUseCase: OpenAppDetailsUseCase,
     searchAppsUseCase: SearchAppsUseCase
@@ -165,10 +163,10 @@ class AppsListViewModel @Inject constructor(
             AppAction(
                 label = shortcut.label,
                 onClick = { clickedApp ->
-                    startShortcutUseCase(clickedApp.packageName, shortcut.id)
+                    // Opened by the pager so the countdown and closed times apply
                     _showBottomSheet.value = false
                     viewModelScope.launch {
-                        _uiEvent.emit(AppsListUiEvent.NavigateHome)
+                        _uiEvent.emit(AppsListUiEvent.OpenShortcut(clickedApp, shortcut.id))
                     }
                 }
             )
@@ -182,4 +180,5 @@ class AppsListViewModel @Inject constructor(
 
 sealed class AppsListUiEvent {
     data object NavigateHome : AppsListUiEvent()
+    data class OpenShortcut(val app: InstalledApp, val shortcutId: String) : AppsListUiEvent()
 }

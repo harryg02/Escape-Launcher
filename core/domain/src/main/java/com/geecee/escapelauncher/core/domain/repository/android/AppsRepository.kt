@@ -51,6 +51,7 @@ interface AppsRepository {
      *
      * @param packageName The package name of the app owning the shortcut.
      * @param shortcutId The unique ID of the shortcut to start.
+     * @return Whether the shortcut was started.
      */
-    fun startShortcut(packageName: String, shortcutId: String)
+    fun startShortcut(packageName: String, shortcutId: String): Boolean
 }

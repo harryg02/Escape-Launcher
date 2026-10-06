@@ -197,6 +197,10 @@ fun MainPagerScreen(
                     app = app, overrideChallenge = false, onAppOpened = {
                         screenTimeViewModel.onAppOpened(it)
                     })
+            }, onShortcutOpened = { app, shortcutId ->
+                viewModel.openShortcut(app = app, shortcutId = shortcutId, onAppOpened = {
+                    screenTimeViewModel.onAppOpened(it)
+                })
             }, onGoHomeRequest = { globalViewModel.requestToGoHome() })
 
             appsListPageIndex -> {
@@ -232,6 +236,12 @@ fun MainPagerScreen(
                                     padding = padding,
                                     onAppOpened = { app ->
                                         handleAppClick(app)
+                                    },
+                                    onShortcutOpened = { app, shortcutId ->
+                                        viewModel.openShortcut(app = app, shortcutId = shortcutId, onAppOpened = {
+                                            screenTimeViewModel.onAppOpened(it)
+                                            appsListViewModel.onSearchExpandedChanged(false)
+                                        })
                                     },
                                     onGoHomeRequest = {
                                         globalViewModel.requestToGoHome()

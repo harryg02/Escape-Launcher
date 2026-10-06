@@ -8,6 +8,7 @@ import com.geecee.escapelauncher.core.analytics.AnalyticsProxy
 import com.geecee.escapelauncher.core.domain.repository.AppConfiguration
 import com.geecee.escapelauncher.core.common.isMainUserApp
 import com.geecee.escapelauncher.core.domain.apps.*
+import com.geecee.escapelauncher.core.domain.repository.android.AppsRepository
 import com.geecee.escapelauncher.core.domain.repository.db.ModifiedAppsRepository
 import com.geecee.escapelauncher.core.domain.repository.settings.*
 import com.geecee.escapelauncher.core.model.AppAction
@@ -40,7 +41,7 @@ class NewHomeScreenViewModel @Inject constructor(
     appConfiguration: AppConfiguration,
     private val getAppActionsUseCase: GetAppActionsUseCase,
     private val getAppShortcutsUseCase: GetAppShortcutsUseCase,
-    private val startShortcutUseCase: StartShortcutUseCase,
+    private val appsRepository: AppsRepository,
     private val uninstallAppUseCase: UninstallAppUseCase,
     private val openAppDetailsUseCase: OpenAppDetailsUseCase,
     private val analyticsProxy: AnalyticsProxy
@@ -109,6 +110,11 @@ class NewHomeScreenViewModel @Inject constructor(
     fun logException(e: Exception) {
         analyticsProxy.recordException(e)
     }
+
+    /**
+     * The installed app with this package name, or null if there isn't one
+     */
+    fun findApp(packageName: String): InstalledApp? = appsRepository.getInstalledAppFromPackageName(packageName)
 
     // Actions
     val bottomSheetActions: StateFlow<List<AppAction>> = _bottomSheetApp.flatMapLatest { app ->
@@ -181,10 +187,10 @@ class NewHomeScreenViewModel @Inject constructor(
             AppAction(
                 label = shortcut.label,
                 onClick = { clickedApp ->
-                    startShortcutUseCase(clickedApp.packageName, shortcut.id)
+                    // Opened by the pager so the countdown and closed times apply
                     _showBottomSheet.value = false
                     viewModelScope.launch {
-                        _uiEvent.emit(HomeUiEvent.NavigateHome)
+                        _uiEvent.emit(HomeUiEvent.OpenShortcut(clickedApp, shortcut.id))
                     }
                 }
             )
@@ -198,4 +204,5 @@ class NewHomeScreenViewModel @Inject constructor(
 
 sealed class HomeUiEvent {
     data object NavigateHome : HomeUiEvent()
+    data class OpenShortcut(val app: InstalledApp, val shortcutId: String) : HomeUiEvent()
 }

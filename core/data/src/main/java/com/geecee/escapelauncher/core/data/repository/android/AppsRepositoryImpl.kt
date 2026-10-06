@@ -174,11 +174,13 @@ class AppsRepositoryImpl @Inject constructor(
     /**
      * Starts the shortcut identified by [shortcutId] for the given [packageName].
      */
-    override fun startShortcut(packageName: String, shortcutId: String) {
-        try {
+    override fun startShortcut(packageName: String, shortcutId: String): Boolean {
+        return try {
             launcherApps.startShortcut(packageName, shortcutId, null, null, Process.myUserHandle())
+            true
         } catch (e: Exception) {
             Log.e("AppsRepository", "Error starting shortcut", e)
+            false
         }
     }
 }

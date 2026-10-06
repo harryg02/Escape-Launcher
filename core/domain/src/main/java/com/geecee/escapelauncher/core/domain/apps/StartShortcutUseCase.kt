@@ -17,8 +17,9 @@ class StartShortcutUseCase @Inject constructor(
      *
      * @param packageName The package name of the app owning the shortcut.
      * @param shortcutId The ID of the shortcut to launch.
+     * @return Whether the shortcut was started.
      */
-    operator fun invoke(packageName: String, shortcutId: String) {
-        appsRepository.startShortcut(packageName, shortcutId)
+    operator fun invoke(packageName: String, shortcutId: String): Boolean {
+        return appsRepository.startShortcut(packageName, shortcutId)
     }
 }

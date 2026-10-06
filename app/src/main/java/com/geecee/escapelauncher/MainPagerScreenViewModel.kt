@@ -18,6 +18,8 @@ import com.geecee.escapelauncher.core.domain.launcher.GetIsDefaultLauncherUseCas
 import com.geecee.escapelauncher.core.domain.managedprofiles.IsManagedProfileSupportedUseCase
 import com.geecee.escapelauncher.core.domain.managedprofiles.ManagedProfileExistsUseCase
 import com.geecee.escapelauncher.core.domain.managedprofiles.ManagedProfileType
+import com.geecee.escapelauncher.core.common.DefaultSettings
+import com.geecee.escapelauncher.core.domain.repository.settings.AppPauseSettingsRepository
 import com.geecee.escapelauncher.core.domain.repository.settings.OnboardingRepository
 import com.geecee.escapelauncher.core.domain.repository.settings.ScreenTimeSettingsRepository
 import com.geecee.escapelauncher.core.domain.repository.settings.LauncherBehaviorRepository
@@ -42,6 +44,7 @@ class MainPagerScreenViewModel @Inject constructor(
     private val onboardingRepository: OnboardingRepository,
     private val screenTimeSettingsRepository: ScreenTimeSettingsRepository,
     launcherBehaviorRepository: LauncherBehaviorRepository,
+    appPauseSettingsRepository: AppPauseSettingsRepository,
     private val tryOpenAppUseCase: TryOpenAppUseCase,
     private val launchAppUseCase: LaunchAppUseCase,
     private val managedProfileExistsUseCase: ManagedProfileExistsUseCase,
@@ -66,6 +69,12 @@ class MainPagerScreenViewModel @Inject constructor(
     val hapticFeedBackEnabled = launcherBehaviorRepository.hapticFeedBackEnabled
 
     val isHiddenPrivateSpace = launcherBehaviorRepository.hidePrivateSpace
+
+    val askIntention = appPauseSettingsRepository.askIntention.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = DefaultSettings.ASK_INTENTION
+    )
 
     private val _isDefaultLauncher = MutableStateFlow(false)
     val isDefaultLauncher: StateFlow<Boolean> = _isDefaultLauncher.asStateFlow()
@@ -127,6 +136,10 @@ class MainPagerScreenViewModel @Inject constructor(
         }
     }
 
+    fun dismissOpenChallenge() {
+        showOpenChallenge.value = false
+    }
+
     fun updateSelectedApp(app: InstalledApp) {
         currentSelectedApp.value = app
     }
@@ -153,8 +166,8 @@ class MainPagerScreenViewModel @Inject constructor(
         viewModelScope.launch {
             when (tryOpenAppUseCase(app.packageName, overrideChallenge)) {
                 TryOpenAppResult.ShowChallenge -> {
-                    showOpenChallenge.value = true
                     updateSelectedApp(app)
+                    showOpenChallenge.value = true
                 }
                 TryOpenAppResult.Launch -> {
                     if (launchAppUseCase(app, onAppOpened)) {

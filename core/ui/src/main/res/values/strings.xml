@@ -136,6 +136,18 @@
     <string name="you_spend_too_long_scrolling">You spend too long scrolling</string>
     <string name="escaoe_launcher_replaces_your_homescreen">Escape Launcher replaces your home screen with a more minimal one so social media apps are less tempting</string>
 
+    <!-- Pause before opening an app -->
+    <string name="intention_question">What are you opening it for?</string>
+    <string name="intention_something_specific">Something specific</string>
+    <string name="intention_replying">Replying to someone</string>
+    <string name="intention_quick_check">A quick check</string>
+    <string name="intention_not_sure">Not sure</string>
+    <string name="go_back">Go back</string>
+    <string name="continue_in_seconds">Continue in %1$d</string>
+    <string name="open_app_name">Open %1$s</string>
+    <string name="app_pause">App countdown</string>
+    <string name="ask_intention">Ask what I\'m opening it for</string>
+
     <!-- Screen time dashboard -->
     <string name="of_your_day_spent_on_your_phone">Of your day spent on your phone</string>
     <string name="higher_we_rec">Higher than we recommend</string>

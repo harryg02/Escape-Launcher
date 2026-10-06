@@ -52,6 +52,9 @@ object DefaultSettings {
     const val SEARCH_AUTO_OPEN = false
     const val AUTOMATICALLY_OPEN_APPS_IN_SEARCH = false
 
+    // App pause
+    const val ASK_INTENTION = true
+
     // Misc
     const val DOUBLE_TAP_TO_LOCK = true
     const val HIDE_SCREEN_TIME_PAGE = false

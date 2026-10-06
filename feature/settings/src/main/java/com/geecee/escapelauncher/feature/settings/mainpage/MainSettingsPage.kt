@@ -439,15 +439,29 @@ fun MainSettingsPage(
                 SettingsNavigationItem(
                     label = stringResource(id = R.string.manage_hidden_apps),
                     false,
+                    isBottomOfGroup = true,
                     onClick = { onNavigate(SettingsNavKey.HiddenApps) })
             }
+
+            // App countdown
+            item(key = "app_pause_subhead") { EscapeSubhead(stringResource(R.string.app_pause)) }
 
             item(key = "manage_open_challenges") {
                 SettingsNavigationItem(
                     label = stringResource(id = R.string.manage_open_challenges),
                     false,
-                    isBottomOfGroup = true,
+                    isTopOfGroup = true,
                     onClick = { onNavigate(SettingsNavKey.OpenChallenges) })
+            }
+
+            item(key = "ask_intention") {
+                SettingsSwitch(
+                    label = stringResource(id = R.string.ask_intention),
+                    checked = uiState.askIntention,
+                    isBottomOfGroup = true,
+                    onCheckedChange = {
+                        mainSettingsPageViewModel.setAskIntention(it)
+                    })
             }
 
             //Other

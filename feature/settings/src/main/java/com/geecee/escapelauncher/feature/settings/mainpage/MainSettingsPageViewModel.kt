@@ -40,7 +40,8 @@ data class MainSettingsUiState(
     val hideScreenTimePage: Boolean = DefaultSettings.HIDE_SCREEN_TIME_PAGE,
     val allowAnalytics: Boolean = DefaultSettings.ALLOW_ANALYTICS,
     val isDefaultLauncher: Boolean = false,
-    val isAccessibilityServiceEnabled: Boolean = false
+    val isAccessibilityServiceEnabled: Boolean = false,
+    val askIntention: Boolean = DefaultSettings.ASK_INTENTION
 )
 
 @HiltViewModel
@@ -52,6 +53,7 @@ class MainSettingsPageViewModel @Inject constructor(
     private val searchSettingsRepository: SearchSettingsRepository,
     private val screenTimeSettingsRepository: ScreenTimeSettingsRepository,
     private val weatherSettingsRepository: WeatherSettingsRepository,
+    private val appPauseSettingsRepository: AppPauseSettingsRepository,
     private val getIsDefaultLauncherUseCase: GetIsDefaultLauncherUseCase,
     private val setDefaultLauncherUseCase: SetDefaultLauncherUseCase,
     systemActionsRepository: SystemActionsRepository,
@@ -82,7 +84,8 @@ class MainSettingsPageViewModel @Inject constructor(
         screenTimeSettingsRepository.hideScreenTimePage,
         launcherBehaviorRepository.allowAnalyitics,
         _isDefaultLauncher,
-        systemActionsRepository.isAccessibilityServiceEnabled
+        systemActionsRepository.isAccessibilityServiceEnabled,
+        appPauseSettingsRepository.askIntention
     ) { args: Array<Any?> ->
         MainSettingsUiState(
             hapticFeedBackEnabled = args[0] as Boolean,
@@ -117,7 +120,8 @@ class MainSettingsPageViewModel @Inject constructor(
             hideScreenTimePage = args[17] as Boolean,
             allowAnalytics = args[18] as Boolean,
             isDefaultLauncher = args[19] as Boolean,
-            isAccessibilityServiceEnabled = args[20] as Boolean
+            isAccessibilityServiceEnabled = args[20] as Boolean,
+            askIntention = args[21] as Boolean
         )
     }.stateIn(
         scope = viewModelScope,
@@ -269,6 +273,12 @@ class MainSettingsPageViewModel @Inject constructor(
     fun setAllowAnalytics(value: Boolean) {
         viewModelScope.launch {
             launcherBehaviorRepository.setAllowAnalytics(value)
+        }
+    }
+
+    fun setAskIntention(value: Boolean) {
+        viewModelScope.launch {
+            appPauseSettingsRepository.setAskIntention(value)
         }
     }
 

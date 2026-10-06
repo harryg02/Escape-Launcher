@@ -48,6 +48,9 @@ object PreferencesKeys {
     val SEARCH_AUTO_OPEN = booleanPreferencesKey(name = "search_auto_open")
     val AUTOMATICALLY_OPEN_APPS_IN_SEARCH = booleanPreferencesKey(name = "automatically_open_apps_in_search")
 
+    //App pause
+    val ASK_INTENTION = booleanPreferencesKey(name = "ask_intention")
+
     //Misc
     val DOUBLE_TAP_TO_LOCK = booleanPreferencesKey(name = "double_tap_to_lock")
     val HIDE_SCREEN_TIME_PAGE = booleanPreferencesKey(name = "hide_screen_time_page")

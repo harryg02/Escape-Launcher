@@ -68,6 +68,12 @@ abstract class DataModule {
 
     @Binds
     @Singleton
+    abstract fun bindAppPauseSettingsRepository(
+        impl: AppPauseSettingsRepositoryImpl
+    ): AppPauseSettingsRepository
+
+    @Binds
+    @Singleton
     abstract fun bindSettingsManager(
         impl: SettingsManagerImpl
     ): SettingsManager

@@ -281,13 +281,16 @@ fun MainPagerScreen(
     }
 
     //Open Challenge
+    val askIntention by viewModel.askIntention.collectAsState()
     AnimatedVisibility(
         visible = viewModel.showOpenChallenge.value, enter = fadeIn(), exit = fadeOut()
     ) {
         OpenChallenge(
+            appName = viewModel.currentSelectedApp.value.displayName,
+            askIntention = askIntention,
             haptics = LocalHapticFeedback.current,
-            enabled = hapticFeedbackEnabled,
-            openApp = {
+            hapticsEnabled = hapticFeedbackEnabled,
+            onContinue = { _ ->
                 viewModel.openApp(
                     app = viewModel.currentSelectedApp.value,
                     overrideChallenge = true,
@@ -296,11 +299,11 @@ fun MainPagerScreen(
                     })
                 coroutineScope.launch {
                     delay(1000.milliseconds)
-                    viewModel.showOpenChallenge.value = false
+                    viewModel.dismissOpenChallenge()
                 }
             },
             goBack = {
-                viewModel.showOpenChallenge.value = false
+                viewModel.dismissOpenChallenge()
             })
     }
 }

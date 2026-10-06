@@ -302,6 +302,9 @@ class MainHomeScreenActivity : ComponentActivity() {
         // Responsible for going home when navigateHomeEvent happens
         LaunchedEffect(globalViewModel.navigateHomeEvent) {
             globalViewModel.navigateHomeEvent.collect {
+                // Pressing home during the pause before an app counts as going back
+                mainPagerViewModel.dismissOpenChallenge()
+
                 // Clear the back stack and set Home as the only entry
                 if (backStack.lastOrNull() !is AppNavKey.Home) {
                     backStack.removeAll { it !is AppNavKey.Home }

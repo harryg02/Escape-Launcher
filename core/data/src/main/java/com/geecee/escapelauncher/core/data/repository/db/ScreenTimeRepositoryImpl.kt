@@ -4,13 +4,11 @@ import android.util.Log
 import com.geecee.escapelauncher.core.data.database.AppUsageDao
 import com.geecee.escapelauncher.core.data.entity.AppUsageEntity
 import com.geecee.escapelauncher.core.domain.repository.db.ScreenTimeRepository
+import com.geecee.escapelauncher.core.domain.screentime.usageDate
 import com.geecee.escapelauncher.core.model.AppUsage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
+import java.time.LocalDate
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -46,7 +44,7 @@ class ScreenTimeRepositoryImpl @Inject constructor(
         // Remove first so a concurrent close (screen-off receiver + onResume) can't double count
         val openTime = appSessions.remove(packageName) ?: return 0
         val usageTime = System.currentTimeMillis() - openTime
-        val appKey = usageKey(packageName, formatDate(Date()))
+        val appKey = usageKey(packageName, usageDate(LocalDate.now()))
 
         return try {
             val existingUsage = appUsageDao.getAppUsage(appKey)
@@ -69,11 +67,8 @@ class ScreenTimeRepositoryImpl @Inject constructor(
      * Keeps the last [DAYS_KEPT] days (today included), which is what the weekly view shows
      */
     override suspend fun clearOldData() {
-        val keepDates = (0 until DAYS_KEPT).map { daysAgo ->
-            val calendar = Calendar.getInstance()
-            calendar.add(Calendar.DAY_OF_YEAR, -daysAgo)
-            formatDate(calendar.time)
-        }
+        val today = LocalDate.now()
+        val keepDates = (0 until DAYS_KEPT).map { daysAgo -> usageDate(today.minusDays(daysAgo.toLong())) }
 
         try {
             val keys = appUsageDao.getAllUsage().map { it.packageName }
@@ -121,10 +116,6 @@ class ScreenTimeRepositoryImpl @Inject constructor(
         return appUsageDao.getAllUsageFlow().map { entities ->
             groupUsageByDate(entities.map { it.packageName to it.totalTime }, dates)
         }
-    }
-
-    private fun formatDate(date: Date): String {
-        return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(date)
     }
 
     private companion object {

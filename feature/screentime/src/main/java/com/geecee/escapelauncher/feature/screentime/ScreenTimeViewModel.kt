@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.geecee.escapelauncher.core.domain.repository.db.ScreenTimeRepository
 import com.geecee.escapelauncher.core.domain.screentime.GetAppUsageUiListUseCase
 import com.geecee.escapelauncher.core.domain.screentime.GetWeeklyUsageUseCase
+import com.geecee.escapelauncher.core.domain.screentime.usageDate
 import com.geecee.escapelauncher.core.model.AppUsageUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -17,9 +18,11 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
+import java.time.Duration
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.TextStyle
 import java.util.Locale
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
@@ -37,7 +40,7 @@ class ScreenTimeViewModel @Inject constructor(
     /**
      * The last seven days, oldest first
      *
-     * @param dates As stored in the database ("yyyy-MM-dd")
+     * @param dates As stored in the database, see [usageDate]
      * @param labels Short day names to show
      */
     private data class WeekDates(val dates: List<String>, val labels: List<String>) {
@@ -46,28 +49,19 @@ class ScreenTimeViewModel @Inject constructor(
 
     private val datesFlow: Flow<WeekDates> = flow {
         while (true) {
-            val now = Date()
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val labelFormat = SimpleDateFormat("EEE", Locale.getDefault())
-            val days = (DAYS_IN_WEEK - 1 downTo 0).map { daysAgo ->
-                Calendar.getInstance().apply {
-                    time = now
-                    add(Calendar.DAY_OF_YEAR, -daysAgo)
-                }.time
-            }
+            val today = LocalDate.now()
+            val days = (DAYS_IN_WEEK - 1 downTo 0).map { daysAgo -> today.minusDays(daysAgo.toLong()) }
 
-            emit(WeekDates(days.map { dateFormat.format(it) }, days.map { labelFormat.format(it) }))
+            emit(
+                WeekDates(
+                    dates = days.map { usageDate(it) },
+                    labels = days.map { it.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()) }
+                )
+            )
 
             // Calculate delay until next midnight
-            val nextMidnight = Calendar.getInstance().apply {
-                time = now
-                add(Calendar.DAY_OF_YEAR, 1)
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-            val delayMs = nextMidnight.timeInMillis - System.currentTimeMillis()
+            val nextMidnight = today.plusDays(1).atStartOfDay(ZoneId.systemDefault())
+            val delayMs = Duration.between(ZonedDateTime.now(), nextMidnight).toMillis()
             delay((delayMs + 1000).milliseconds) // 1 second buffer to ensure we've crossed into the next day
         }
     }.distinctUntilChanged()

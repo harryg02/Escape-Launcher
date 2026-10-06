@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.geecee.escapelauncher.core.data.database.AppDatabase
 import com.geecee.escapelauncher.core.data.database.AppUsageDao
+import com.geecee.escapelauncher.core.data.database.MIGRATION_1_2
 import com.geecee.escapelauncher.core.data.database.ModifiedAppsDao
 import com.geecee.escapelauncher.core.data.database.ModifiedAppsDatabase
 import dagger.Module
@@ -25,7 +26,7 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             "app_usage_database"
-        ).build()
+        ).addMigrations(MIGRATION_1_2).build()
     }
 
     @Provides

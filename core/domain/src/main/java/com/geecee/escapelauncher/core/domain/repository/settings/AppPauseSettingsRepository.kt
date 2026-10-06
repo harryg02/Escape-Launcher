@@ -1,5 +1,6 @@
 package com.geecee.escapelauncher.core.domain.repository.settings
 
+import com.geecee.escapelauncher.core.model.ClosedPeriod
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -13,4 +14,8 @@ interface AppPauseSettingsRepository {
     /** Whether the pause offers to set how long the app will be used for, with a reminder at the end */
     val askSessionLength: Flow<Boolean>
     suspend fun setAskSessionLength(enabled: Boolean)
+
+    /** Recurring times during which apps with the countdown stay closed. Empty by default */
+    val closedPeriods: Flow<List<ClosedPeriod>>
+    suspend fun setClosedPeriods(periods: List<ClosedPeriod>)
 }

@@ -50,8 +50,12 @@ import kotlin.time.Duration.Companion.seconds
 
 private const val PAUSE_SECONDS = 5
 private val sessionLengthMinutes = listOf(5, 15, 30)
-private val pauseLight = Color(0xFFB2D8D8)
-private val pauseDark = Color(0xFF004C4C)
+internal val pauseDark = Color(0xFF004C4C)
+internal val pauseBackground = Brush.linearGradient(
+    colors = listOf(Color(0xFFB2D8D8), pauseDark),
+    start = Offset(0f, 0f),
+    end = Offset(0f, Float.POSITIVE_INFINITY)
+)
 
 /**
  * Full screen pause shown before opening an app that has the open countdown. It counts down,
@@ -107,13 +111,7 @@ fun OpenChallenge(
     Box(
         modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.linearGradient(
-                    colors = listOf(pauseLight, pauseDark),
-                    start = Offset(0f, 0f),
-                    end = Offset(0f, Float.POSITIVE_INFINITY)
-                )
-            )
+            .background(brush = pauseBackground)
             .pointerInput(Unit) {},
         contentAlignment = Alignment.Center
     ) {

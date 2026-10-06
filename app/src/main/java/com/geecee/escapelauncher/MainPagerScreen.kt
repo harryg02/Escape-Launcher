@@ -34,6 +34,7 @@ import com.geecee.escapelauncher.core.common.DefaultSettings
 import com.geecee.escapelauncher.core.domain.managedprofiles.ManagedProfileType
 import com.geecee.escapelauncher.core.model.InstalledApp
 import com.geecee.escapelauncher.core.ui.DefaultSettingsUi
+import com.geecee.escapelauncher.core.ui.composables.ClosedNotice
 import com.geecee.escapelauncher.core.ui.composables.HomeScreenBottomSheet
 import com.geecee.escapelauncher.core.ui.composables.OpenChallenge
 import com.geecee.escapelauncher.core.ui.composables.TabDisplay
@@ -278,6 +279,18 @@ fun MainPagerScreen(
                 }
             }
         }
+    }
+
+    // Closed time notice
+    AnimatedVisibility(
+        visible = viewModel.showClosedNotice.value, enter = fadeIn(), exit = fadeOut()
+    ) {
+        ClosedNotice(
+            appName = viewModel.currentSelectedApp.value.displayName,
+            reopensAt = viewModel.closedNoticeReopensAt.value,
+            onOpenAnyway = { viewModel.openAnyway() },
+            goBack = { viewModel.dismissOpenChallenge() }
+        )
     }
 
     //Open Challenge

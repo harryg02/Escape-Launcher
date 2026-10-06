@@ -493,7 +493,6 @@ fun MainSettingsPage(
                 SettingsSwitch(
                     label = stringResource(id = R.string.ask_session_length),
                     checked = uiState.askSessionLength,
-                    isBottomOfGroup = true,
                     onCheckedChange = { enabled ->
                         // The reminder is a notification, so it is only turned on once it can be shown
                         if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -504,6 +503,14 @@ fun MainSettingsPage(
                             mainSettingsPageViewModel.setAskSessionLength(enabled)
                         }
                     })
+            }
+
+            item(key = "closed_times") {
+                SettingsNavigationItem(
+                    label = stringResource(id = R.string.closed_times),
+                    false,
+                    isBottomOfGroup = true,
+                    onClick = { onNavigate(SettingsNavKey.ClosedTimes) })
             }
 
             //Other

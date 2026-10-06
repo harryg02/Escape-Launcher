@@ -35,6 +35,7 @@ import com.geecee.escapelauncher.core.ui.R
 import com.geecee.escapelauncher.core.ui.composables.PrivacyPolicyDialog
 import com.geecee.escapelauncher.core.ui.composables.ReorderableSelectionLazyColumn
 import com.geecee.escapelauncher.feature.settings.anchor.HomeAnchorOptions
+import com.geecee.escapelauncher.feature.settings.closedtimes.ClosedTimesOptions
 import com.geecee.escapelauncher.feature.settings.devoptions.DevOptions
 import com.geecee.escapelauncher.feature.settings.font.ChooseFont
 import com.geecee.escapelauncher.feature.settings.font.FontLicenceDialog
@@ -83,6 +84,9 @@ sealed interface SettingsNavKey : NavKey {
 
     @Serializable
     data object HomeAnchor : SettingsNavKey
+
+    @Serializable
+    data object ClosedTimes : SettingsNavKey
 }
 
 //
@@ -253,6 +257,9 @@ fun Settings(
                 }
                 entry<SettingsNavKey.HomeAnchor> {
                     HomeAnchorOptions(goBack = { backStack.removeLastOrNull() })
+                }
+                entry<SettingsNavKey.ClosedTimes> {
+                    ClosedTimesOptions(goBack = { backStack.removeLastOrNull() })
                 }
             }
         )

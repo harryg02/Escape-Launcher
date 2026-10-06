@@ -157,6 +157,22 @@
     <string name="session_length_question">For how long?</string>
     <string name="minutes_short">%1$d min</string>
     <string name="no_limit">No limit</string>
+    <string name="closed_times">Closed times</string>
+    <string name="closed_times_description">During these times, apps with a countdown stay closed. You can still open one if you choose to.</string>
+    <string name="add_closed_time">Add closed time</string>
+    <string name="closed_time">Closed time</string>
+    <string name="closed_time_from">From %1$s</string>
+    <string name="closed_time_until">Until %1$s</string>
+    <string name="closed_time_next_day">Ends the next day</string>
+    <string name="closed_time_whole_day">Lasts the whole day</string>
+    <string name="closed_time_summary">%1$s, %2$s to %3$s</string>
+    <string name="every_day">Every day</string>
+    <string name="weekdays">Weekdays</string>
+    <string name="weekends">Weekends</string>
+    <string name="cancel">Cancel</string>
+    <string name="closed_until">Closed until %1$s</string>
+    <string name="closed_for_now">Closed during the times you set</string>
+    <string name="open_anyway">Open anyway</string>
     <string name="notifications_needed">Allow notifications to get a reminder when the time is up</string>
 
     <!-- Reminder when the planned time in an app is up -->

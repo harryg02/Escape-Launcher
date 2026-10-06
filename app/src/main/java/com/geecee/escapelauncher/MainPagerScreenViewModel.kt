@@ -37,6 +37,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
 import kotlin.time.Duration.Companion.milliseconds
 
 @HiltViewModel
@@ -120,6 +121,10 @@ class MainPagerScreenViewModel @Inject constructor(
 
     var showOpenChallenge = mutableStateOf(false)
 
+    // Shown instead of the pause during one of the user's closed times
+    var showClosedNotice = mutableStateOf(false)
+    var closedNoticeReopensAt = mutableStateOf<LocalDateTime?>(null)
+
     val interactionSource = MutableInteractionSource()
 
     val appsListScrollState = LazyListState()
@@ -167,6 +172,15 @@ class MainPagerScreenViewModel @Inject constructor(
 
     fun dismissOpenChallenge() {
         showOpenChallenge.value = false
+        showClosedNotice.value = false
+    }
+
+    /**
+     * The user chose to open an app during a closed time. They still get the normal pause.
+     */
+    fun openAnyway() {
+        showClosedNotice.value = false
+        showOpenChallenge.value = true
     }
 
     fun updateSelectedApp(app: InstalledApp) {
@@ -193,10 +207,15 @@ class MainPagerScreenViewModel @Inject constructor(
         onAppOpened: ((String) -> Unit)? = null
     ) {
         viewModelScope.launch {
-            when (tryOpenAppUseCase(app.packageName, overrideChallenge)) {
+            when (val result = tryOpenAppUseCase(app.packageName, overrideChallenge)) {
                 TryOpenAppResult.ShowChallenge -> {
                     updateSelectedApp(app)
                     showOpenChallenge.value = true
+                }
+                is TryOpenAppResult.Closed -> {
+                    updateSelectedApp(app)
+                    closedNoticeReopensAt.value = result.reopensAt
+                    showClosedNotice.value = true
                 }
                 TryOpenAppResult.Launch -> {
                     if (launchAppUseCase(app, onAppOpened)) {

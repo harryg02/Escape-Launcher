@@ -116,10 +116,7 @@ class MainHomeScreenActivity : ComponentActivity() {
         // Sort out the window
         enableEdgeToEdge()
         lifecycleScope.launch {
-            globalViewModel.showStatusBar.collect { show ->
-                window.configureStatusBar(hide = !show)
-                window.configureNavBar(hide = false)
-            }
+            globalViewModel.showStatusBar.collect { applySystemBars() }
         }
 
         // Set up the screen time tracking cleanup
@@ -193,6 +190,9 @@ class MainHomeScreenActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
 
+        // Another app, the notification shade or a system dialog may have shown the status bar
+        applySystemBars()
+
         // The user may have changed the default launcher while we were in the background
         mainPagerViewModel.updateLauncherStatus()
 
@@ -204,6 +204,16 @@ class MainHomeScreenActivity : ComponentActivity() {
                     screenTimeViewModel.onAppClosed(packageName)
                 }
             }
+        }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+
+        // Focus comes back after the notification shade, a bottom sheet or a dialog closes, any of
+        // which can leave the status bar showing (on Android 9 and 10 the hide flag is cleared)
+        if (hasFocus) {
+            applySystemBars()
         }
     }
 
@@ -227,6 +237,17 @@ class MainHomeScreenActivity : ComponentActivity() {
         }
     }
 
+
+    /**
+     * Applies the user's status bar setting to the window. The hide request does not stick on every
+     * Android version, so this runs whenever the window could have lost it, not only when the
+     * setting changes. Does nothing until the setting has loaded.
+     */
+    private fun applySystemBars() {
+        val show = globalViewModel.showStatusBar.value ?: return
+        window.configureStatusBar(hide = !show)
+        window.configureNavBar(hide = false)
+    }
 
     /**
      * Requests the optional runtime permissions (notifications, location for weather) in a single

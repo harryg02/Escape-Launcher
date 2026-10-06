@@ -12,6 +12,7 @@ import jakarta.inject.Inject
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -25,7 +26,16 @@ class GlobalViewModel @Inject constructor(
 ) : ViewModel() {
     val allowAnalytics = launcherBehaviorRepository.allowAnalyitics
     val firstTime = onboardingRepository.firstTime
-    val showStatusBar = appearanceRepository.showStatusBar
+    /**
+     * Null until DataStore has emitted, so callers never apply a guessed value to the window.
+     * Kept as state because the window has to be re-told after it regains focus.
+     */
+    val showStatusBar: StateFlow<Boolean?> = appearanceRepository.showStatusBar
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = null
+        )
     val showWallpaper = appearanceRepository.showWallpaper
 
     private val _navigateHomeEvent = MutableSharedFlow<Unit>(

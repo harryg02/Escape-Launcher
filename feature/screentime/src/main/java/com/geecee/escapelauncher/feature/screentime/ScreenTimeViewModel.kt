@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.geecee.escapelauncher.core.domain.repository.db.ScreenTimeRepository
 import com.geecee.escapelauncher.core.domain.screentime.GetAppUsageUiListUseCase
+import com.geecee.escapelauncher.core.domain.screentime.GetWeeklyUsageUseCase
 import com.geecee.escapelauncher.core.model.AppUsageUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -22,23 +24,39 @@ import java.util.Locale
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 
+private const val DAYS_IN_WEEK = 7
+
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class ScreenTimeViewModel @Inject constructor(
     private val screenTimeRepository: ScreenTimeRepository,
-    private val getAppUsageUiListUseCase: GetAppUsageUiListUseCase
+    private val getAppUsageUiListUseCase: GetAppUsageUiListUseCase,
+    private val getWeeklyUsageUseCase: GetWeeklyUsageUseCase
 ) : ViewModel() {
 
-    private val datesFlow: Flow<Pair<String, String>> = flow {
+    /**
+     * The last seven days, oldest first
+     *
+     * @param dates As stored in the database ("yyyy-MM-dd")
+     * @param labels Short day names to show
+     */
+    private data class WeekDates(val dates: List<String>, val labels: List<String>) {
+        val today: String get() = dates.last()
+    }
+
+    private val datesFlow: Flow<WeekDates> = flow {
         while (true) {
             val now = Date()
-            val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(now)
-            val calendar = Calendar.getInstance()
-            calendar.time = now
-            calendar.add(Calendar.DAY_OF_YEAR, -1)
-            val yesterday = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.time)
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val labelFormat = SimpleDateFormat("EEE", Locale.getDefault())
+            val days = (DAYS_IN_WEEK - 1 downTo 0).map { daysAgo ->
+                Calendar.getInstance().apply {
+                    time = now
+                    add(Calendar.DAY_OF_YEAR, -daysAgo)
+                }.time
+            }
 
-            emit(today to yesterday)
+            emit(WeekDates(days.map { dateFormat.format(it) }, days.map { labelFormat.format(it) }))
 
             // Calculate delay until next midnight
             val nextMidnight = Calendar.getInstance().apply {
@@ -54,28 +72,35 @@ class ScreenTimeViewModel @Inject constructor(
         }
     }.distinctUntilChanged()
 
-    val totalUsage: StateFlow<Long> = datesFlow.flatMapLatest { (today, _) ->
-        screenTimeRepository.getTotalUsageForDateFlow(today)
+    val totalUsage: StateFlow<Long> = datesFlow.flatMapLatest { week ->
+        screenTimeRepository.getTotalUsageForDateFlow(week.today)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = 0L
     )
 
-    val yesterdayTotalUsage: StateFlow<Long> = datesFlow.flatMapLatest { (_, yesterday) ->
-        screenTimeRepository.getTotalUsageForDateFlow(yesterday)
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = 0L
-    )
-
-    val appUsageUiList: StateFlow<List<AppUsageUiModel>> = datesFlow.flatMapLatest { (today, yesterday) ->
-        getAppUsageUiListUseCase(today, yesterday)
+    val appUsageUiList: StateFlow<List<AppUsageUiModel>> = datesFlow.flatMapLatest { week ->
+        getAppUsageUiListUseCase(week.today)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
+    )
+
+    val weekUsage: StateFlow<WeekUi> = datesFlow.flatMapLatest { week ->
+        getWeeklyUsageUseCase(week.dates).map { usage ->
+            WeekUi(
+                days = usage.days.mapIndexed { index, day ->
+                    WeekDayUi(label = week.labels[index], totalTime = day.totalTime, apps = day.apps)
+                },
+                apps = usage.apps
+            )
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = WeekUi()
     )
 
     fun onAppOpened(packageName: String) {

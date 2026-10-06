@@ -112,8 +112,6 @@
     <string name="grant_accessibility">Permitir</string>
 
     <!-- Screen time dashboard -->
-    <string name="of_your_day_spent_on_your_phone">Do teu día mirando o móbil</string>
-    <string name="higher_we_rec">Superior ao recomendable</string>
     <string name="no_apps_used">Aínda non abriches ningunha app!</string>
     
     <!-- Themes -->

@@ -96,8 +96,6 @@
     <string name="hold_for_settings">Mantén presionado para ajustes</string>
     <string name="accessibility_title">Permiso de Bloquear Pantalla</string>
     <string name="grant_accessibility">Permitir</string>
-    <string name="of_your_day_spent_on_your_phone">De tu día usando tu teléfono</string>
-    <string name="higher_we_rec">Superior a lo recomendado</string>
     <string name="no_apps_used">Aún no se han abierto apps!</string>
     <string name="accessibility_service_description">Permite a la app apagar la pantalla.</string>
     <string name="back">Atrás</string>

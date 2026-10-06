@@ -15,8 +15,8 @@ interface AppUsageDao {
     @Query("SELECT * FROM app_usage WHERE packageName = :packageName")
     suspend fun getAppUsage(packageName: String): AppUsageEntity?
 
-    @Query("DELETE FROM app_usage WHERE packageName NOT LIKE :todaySuffix AND packageName NOT LIKE :yesterdaySuffix")
-    suspend fun deleteOldDataExcept(todaySuffix: String, yesterdaySuffix: String)
+    @Query("DELETE FROM app_usage WHERE packageName IN (:keys)")
+    suspend fun deleteByKeys(keys: List<String>)
 
     @Query("SELECT * FROM app_usage")
     suspend fun getAllUsage(): List<AppUsageEntity>

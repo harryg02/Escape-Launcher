@@ -46,8 +46,7 @@ class ScreenTimeRepositoryImpl @Inject constructor(
         // Remove first so a concurrent close (screen-off receiver + onResume) can't double count
         val openTime = appSessions.remove(packageName) ?: return 0
         val usageTime = System.currentTimeMillis() - openTime
-        val currentDate = getCurrentDate()
-        val appKey = "$packageName-$currentDate"
+        val appKey = usageKey(packageName, formatDate(Date()))
 
         return try {
             val existingUsage = appUsageDao.getAppUsage(appKey)
@@ -66,14 +65,20 @@ class ScreenTimeRepositoryImpl @Inject constructor(
         }
     }
 
+    /**
+     * Keeps the last [DAYS_KEPT] days (today included), which is what the weekly view shows
+     */
     override suspend fun clearOldData() {
-        val today = getCurrentDate()
-        val calendar = Calendar.getInstance()
-        calendar.add(Calendar.DAY_OF_YEAR, -1)
-        val yesterday = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.time)
+        val keepDates = (0 until DAYS_KEPT).map { daysAgo ->
+            val calendar = Calendar.getInstance()
+            calendar.add(Calendar.DAY_OF_YEAR, -daysAgo)
+            formatDate(calendar.time)
+        }
 
         try {
-            appUsageDao.deleteOldDataExcept("%-$today", "%-$yesterday")
+            val keys = appUsageDao.getAllUsage().map { it.packageName }
+            // Chunked to stay under SQLite's bound variable limit on older Android versions
+            usageKeysToDelete(keys, keepDates).chunked(500).forEach { appUsageDao.deleteByKeys(it) }
         } catch (e: Exception) {
             Log.e("ScreenTimeRepository", "Error clearing old data: ${e.message}")
         }
@@ -112,7 +117,17 @@ class ScreenTimeRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun getCurrentDate(): String {
-        return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+    override fun getUsageForDatesFlow(dates: List<String>): Flow<Map<String, List<AppUsage>>> {
+        return appUsageDao.getAllUsageFlow().map { entities ->
+            groupUsageByDate(entities.map { it.packageName to it.totalTime }, dates)
+        }
+    }
+
+    private fun formatDate(date: Date): String {
+        return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(date)
+    }
+
+    private companion object {
+        const val DAYS_KEPT = 7
     }
 }

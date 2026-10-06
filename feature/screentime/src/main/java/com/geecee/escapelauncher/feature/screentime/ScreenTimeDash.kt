@@ -2,69 +2,57 @@ package com.geecee.escapelauncher.feature.screentime
 
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.geecee.escapelauncher.core.common.formatScreenTime
+import com.geecee.escapelauncher.core.model.AppUsageUiModel
+import com.geecee.escapelauncher.core.ui.R
 import com.geecee.escapelauncher.core.ui.composables.AppUsage
 import com.geecee.escapelauncher.core.ui.composables.AppUsages
-import com.geecee.escapelauncher.core.ui.composables.ScreenTime
-import com.geecee.escapelauncher.core.ui.composables.ScreenTimeInfoBox
 import com.geecee.escapelauncher.core.ui.composables.SettingsSpacer
-import com.geecee.escapelauncher.core.ui.R
-import com.geecee.escapelauncher.core.theme.colours.escapeGreen
-import com.geecee.escapelauncher.core.theme.colours.escapeRed
-import com.geecee.escapelauncher.core.common.formatScreenTime
 
-//todo: Probably move this function to a useCase or something idk
-/**
- * This function works out if the screen time is over the recommended and if it is finds out how many per cent over it is
- */
-fun calculateOveragePercentage(screenTime: Long): Int {
-    val recommendedTime: Double = 0.5 * 60 * 60 * 1000 // 1 hour in milliseconds
-
-    // If screen time is less than or equal to the recommended time, return 0%
-    if (screenTime <= recommendedTime) {
-        return 0
-    }
-
-    // Calculate the overage percentage
-    val overage = screenTime - recommendedTime
-    val percentage = (overage.toFloat() / recommendedTime) * 100
-
-    return percentage.toInt()
-}
+// Long lists make the page a scoreboard; the rest of the apps add little to the picture
+private const val MAX_APPS_SHOWN = 10
 
 /**
- * Parent UI for ScreenTimeDashboard
+ * Screen time page. Shows where the time went rather than judging it: a column per day for the
+ * last week, the chosen day's apps, and the apps across the whole week.
  */
 @Composable
 fun ScreenTimeDashboard(
     screenTimeViewModel: ScreenTimeViewModel = hiltViewModel(LocalActivity.current as ComponentActivity)
 ) {
-    val todayUsage by screenTimeViewModel.totalUsage.collectAsState()
-    val yesterdayUsage by screenTimeViewModel.yesterdayTotalUsage.collectAsState()
-    val appUsageUiList by screenTimeViewModel.appUsageUiList.collectAsState()
+    val week by screenTimeViewModel.weekUsage.collectAsState()
+    // -1 means today, so the page follows the date when it changes at midnight
+    var chosenDay by rememberSaveable { mutableIntStateOf(-1) }
+    val selectedIndex = if (chosenDay in week.days.indices) chosenDay else week.days.lastIndex
+    val selectedDay = week.days.getOrNull(selectedIndex)
+    val isToday = selectedIndex == week.days.lastIndex
 
-    // UI for ScreenTime screen
     Column(
         Modifier
             .fillMaxSize()
@@ -73,55 +61,76 @@ fun ScreenTimeDashboard(
     ) {
         Spacer(Modifier.height(120.dp))
 
-        ScreenTime(
-            formatScreenTime(todayUsage),
-            todayUsage > yesterdayUsage,
-            Modifier
+        Text(
+            text = if (isToday || selectedDay == null) stringResource(R.string.today) else selectedDay.label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = formatScreenTime(selectedDay?.totalTime ?: 0L),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.SemiBold
         )
 
         Spacer(Modifier.height(15.dp))
 
-        Row(
-            Modifier
-                .widthIn(max = 400.dp)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(15.dp)
-        ) {
-            val totalDayHours = 16
-            val totalMs = totalDayHours * 60L * 60 * 1000
-
-            val percentOfYourDayOnYourPhone = ((todayUsage.toDouble() / totalMs) * 100).toInt()
-            ScreenTimeInfoBox(
-                text = stringResource(R.string.of_your_day_spent_on_your_phone),
-                percent = ((todayUsage.toDouble() / totalMs) * 100).toInt(),
-                percentageColour = if (percentOfYourDayOnYourPhone < 10) escapeGreen else escapeRed,
+        if (week.days.isNotEmpty()) {
+            WeekChart(
+                days = week.days,
+                selectedIndex = selectedIndex,
+                onSelect = { index ->
+                    chosenDay = if (index == week.days.lastIndex) -1 else index
+                },
                 modifier = Modifier
-                    .weight(1f)
-                    .aspectRatio(1f)
-            )
-
-            val percentHigherThanRec = calculateOveragePercentage(todayUsage)
-            ScreenTimeInfoBox(
-                text = stringResource(R.string.higher_we_rec),
-                percent = percentHigherThanRec,
-                percentageColour = if (percentHigherThanRec < 1) escapeGreen else escapeRed,
-                modifier = Modifier
-                    .weight(1f)
-                    .aspectRatio(1f)
+                    .widthIn(max = 400.dp)
+                    .clip(RoundedCornerShape(48.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .padding(20.dp)
             )
         }
 
+        Spacer(Modifier.height(30.dp))
+
+        UsageSection(
+            title = stringResource(R.string.where_the_time_went),
+            apps = selectedDay?.apps.orEmpty()
+        )
+
+        Spacer(Modifier.height(30.dp))
+
+        UsageSection(
+            title = stringResource(R.string.last_seven_days),
+            apps = week.apps
+        )
+
         Spacer(Modifier.height(15.dp))
 
+        SettingsSpacer()
+        SettingsSpacer()
+    }
+}
+
+@Composable
+private fun UsageSection(
+    title: String,
+    apps: List<AppUsageUiModel>,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier.fillMaxWidth()) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(start = 10.dp, bottom = 8.dp)
+        )
+
         AppUsages(Modifier) {
-            if (appUsageUiList.isNotEmpty()) {
-                appUsageUiList.forEach { appUsageUi ->
+            if (apps.isNotEmpty()) {
+                apps.take(MAX_APPS_SHOWN).forEach { app ->
                     AppUsage(
-                        appUsageUi.appName,
-                        appUsageUi.usageIncreased,
-                        if (appUsageUi.totalTime > 60000) formatScreenTime(
-                            appUsageUi.totalTime
-                        ) else "<1m",
+                        app.appName,
+                        if (app.totalTime > 60000) formatScreenTime(app.totalTime) else "<1m",
                         Modifier
                     )
                 }
@@ -134,11 +143,5 @@ fun ScreenTimeDashboard(
                 )
             }
         }
-
-        Spacer(Modifier.height(15.dp))
-
-        SettingsSpacer()
-        SettingsSpacer()
-
     }
 }

@@ -124,8 +124,6 @@
     <string name="grant_accessibility">Consenti</string>
 
     <!-- Screen time dashboard -->
-    <string name="of_your_day_spent_on_your_phone">Della tua giornata spesa sul telefono</string>
-    <string name="higher_we_rec">Superiore a quanto raccomandato</string>
     <string name="no_apps_used">Nessuna app aperta ancora!</string>
 
     <string name="accessibility_service_description">Consente all\'app di spegnere lo schermo.</string>

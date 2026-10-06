@@ -9,32 +9,18 @@ import kotlinx.coroutines.flow.combine
 
 /**
  * Use case to process and format app usage data for display in the UI.
- * Handles joining usage stats with app names and calculating trend (increase/decrease).
+ * Joins one day's usage stats with app names.
  */
 class GetAppUsageUiListUseCase @Inject constructor(
     private val screenTimeRepository: ScreenTimeRepository,
     private val appsRepository: AppsRepository
 ) {
-    operator fun invoke(date: String, yesterdayDate: String): Flow<List<AppUsageUiModel>> {
+    operator fun invoke(date: String): Flow<List<AppUsageUiModel>> {
         return combine(
             screenTimeRepository.getScreenTimeListSortedFlow(date),
-            screenTimeRepository.getScreenTimeListSortedFlow(yesterdayDate),
             appsRepository.installedApps
-        ) { todayUsage, yesterdayUsage, apps ->
-            todayUsage.map { appScreenTime ->
-                val yesterdayAppUsage = yesterdayUsage.find { it.packageName == appScreenTime.packageName }
-                val usageIncreased = appScreenTime.totalTime > (yesterdayAppUsage?.totalTime ?: 0L)
-                
-                // Get display name from current installed apps
-                val appName = apps.find { it.packageName == appScreenTime.packageName }?.displayName ?: "null"
-
-                AppUsageUiModel(
-                    packageName = appScreenTime.packageName,
-                    appName = appName,
-                    totalTime = appScreenTime.totalTime,
-                    usageIncreased = usageIncreased
-                )
-            }.filter { it.appName != "null" }
+        ) { usage, apps ->
+            usage.withAppNames(apps.associate { it.packageName to it.displayName })
         }
     }
 }

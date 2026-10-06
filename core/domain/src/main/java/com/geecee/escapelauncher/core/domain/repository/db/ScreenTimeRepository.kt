@@ -14,5 +14,11 @@ interface ScreenTimeRepository {
     suspend fun getScreenTimeListSorted(date: String): List<AppUsage>
     fun getScreenTimeListSortedFlow(date: String): Flow<List<AppUsage>>
     fun getTotalUsageForDateFlow(date: String): Flow<Long>
+
+    /**
+     * Usage per app for each of [dates], sorted by time. Every date is a key in the map, with an
+     * empty list if nothing was used that day.
+     */
+    fun getUsageForDatesFlow(dates: List<String>): Flow<Map<String, List<AppUsage>>>
     val allUsageFlow: Flow<List<AppUsage>>
 }

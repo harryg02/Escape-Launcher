@@ -185,8 +185,9 @@
     <string name="session_cue_go_home">Tap to go home</string>
 
     <!-- Screen time dashboard -->
-    <string name="of_your_day_spent_on_your_phone">Of your day spent on your phone</string>
-    <string name="higher_we_rec">Higher than we recommend</string>
+    <string name="today">Today</string>
+    <string name="where_the_time_went">Where the time went</string>
+    <string name="last_seven_days">Last 7 days</string>
     <string name="no_apps_used">No apps opened yet!</string>
 
     <string name="accessibility_service_description">Allows the app to turn off the screen.</string>

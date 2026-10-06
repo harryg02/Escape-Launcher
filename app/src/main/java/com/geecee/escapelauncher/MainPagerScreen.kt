@@ -29,10 +29,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.SoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.geecee.escapelauncher.core.common.DefaultSettings
 import com.geecee.escapelauncher.core.domain.managedprofiles.ManagedProfileType
 import com.geecee.escapelauncher.core.model.InstalledApp
+import com.geecee.escapelauncher.core.ui.R
 import com.geecee.escapelauncher.core.ui.DefaultSettingsUi
 import com.geecee.escapelauncher.core.ui.composables.ClosedNotice
 import com.geecee.escapelauncher.core.ui.composables.HomeScreenBottomSheet
@@ -87,7 +89,7 @@ fun MainPagerScreen(
     val appsListTabs = listOf(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && canUseSecureFolder(context = context)) {
             TabbedScreen(
-                title = "Secure Folder", icon = Icons.Default.Lock, content = {
+                title = stringResource(R.string.apps_tab_secure_folder), icon = Icons.Default.Lock, content = {
                     SecureFolderButton(
                         modifier = Modifier.fillMaxSize()
                     )
@@ -100,7 +102,7 @@ fun MainPagerScreen(
             )
         ) {
             TabbedScreen(
-                title = "Private", icon = Icons.Default.Lock, content = {
+                title = stringResource(R.string.apps_tab_private), icon = Icons.Default.Lock, content = {
                     PrivateSpace(
                         modifier = Modifier
                             .fillMaxSize(),
@@ -127,7 +129,7 @@ fun MainPagerScreen(
             )
         ) {
             TabbedScreen(
-                title = "Work", icon = Icons.Default.Work, content = {
+                title = stringResource(R.string.apps_tab_work), icon = Icons.Default.Work, content = {
                     WorkApps(modifier =
                         Modifier.fillMaxSize(),
                         onAppClick = { app ->
@@ -229,7 +231,7 @@ fun MainPagerScreen(
                 TabDisplay(
                     screens = listOf(
                         TabbedScreen(
-                            title = "All Apps",
+                            title = stringResource(R.string.all_apps),
                             icon = Icons.Rounded.Apps,
                             content = { padding ->
                                 AppsList(

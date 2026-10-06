@@ -25,6 +25,9 @@
 
     <!-- All Apps strings -->
     <string name="all_apps">All Apps</string>
+    <string name="apps_tab_private">Private</string>
+    <string name="apps_tab_work">Work</string>
+    <string name="apps_tab_secure_folder">Secure Folder</string>
     <string name="uninstall">Uninstall</string>
     <string name="hide">Hide</string>
     <string name="add_to_fav">Add To Favourites</string>

@@ -148,7 +148,7 @@ fun StatisticsPage(
                 modifier = Modifier.fillMaxWidth()
             )
             Text(
-                stringResource(R.string.you_spend_too_long_scrolling),
+                stringResource(R.string.onboarding_intro_title),
                 Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.titleSmall,

@@ -4,20 +4,34 @@ import android.util.Log
 import com.geecee.escapelauncher.core.data.database.AppUsageDao
 import com.geecee.escapelauncher.core.data.entity.AppUsageEntity
 import com.geecee.escapelauncher.core.domain.repository.db.ScreenTimeRepository
+import com.geecee.escapelauncher.core.domain.screentime.splitSessionByDay
 import com.geecee.escapelauncher.core.domain.screentime.usageDate
 import com.geecee.escapelauncher.core.model.AppUsage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.LocalDate
-import java.util.concurrent.ConcurrentHashMap
+import java.time.ZoneId
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class ScreenTimeRepositoryImpl @Inject constructor(
-    private val appUsageDao: AppUsageDao
+class ScreenTimeRepositoryImpl internal constructor(
+    private val appUsageDao: AppUsageDao,
+    private val currentTimeMillis: () -> Long
 ) : ScreenTimeRepository {
-    private val appSessions = ConcurrentHashMap<String, Long>()
+    @Inject
+    constructor(appUsageDao: AppUsageDao) : this(appUsageDao, System::currentTimeMillis)
+
+    private data class Session(val packageName: String, val startMillis: Long)
+
+    // The app last opened from the launcher, until the user is back home or the screen turns off
+    private val activeSession = AtomicReference<Session?>(null)
+
+    // Saving reads and then writes a row, so two saves at once could lose one of them
+    private val saveLock = Mutex()
 
     override val allUsageFlow: Flow<List<AppUsage>> = appUsageDao.getAllUsageFlow().map { entities ->
         entities.map { usage ->
@@ -28,34 +42,38 @@ class ScreenTimeRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun onAppOpened(packageName: String) {
-        appSessions[packageName] = System.currentTimeMillis()
+    override suspend fun onAppOpened(packageName: String) {
+        val now = currentTimeMillis()
+        // The launcher only opens one app at a time, so if an earlier one was still counting
+        // (e.g. the launcher stayed visible in split screen) the user has moved on from it
+        activeSession.getAndSet(Session(packageName, now))?.let { save(it, now) }
     }
 
     override fun hasActiveSession(): Boolean {
-        return appSessions.isNotEmpty()
+        return activeSession.get() != null
     }
 
     override fun getActiveSessionPackageName(): String? {
-        return appSessions.keys().asSequence().firstOrNull()
+        return activeSession.get()?.packageName
     }
 
     override suspend fun onAppClosed(packageName: String): Int {
-        // Remove first so a concurrent close (screen-off receiver + onResume) can't double count
-        val openTime = appSessions.remove(packageName) ?: return 0
-        val usageTime = System.currentTimeMillis() - openTime
-        val appKey = usageKey(packageName, usageDate(LocalDate.now()))
+        val session = activeSession.get() ?: return 0
+        // Clear first so a concurrent close (screen-off receiver + onResume) can't double count
+        if (session.packageName != packageName || !activeSession.compareAndSet(session, null)) return 0
+        return save(session, currentTimeMillis())
+    }
 
-        return try {
-            val existingUsage = appUsageDao.getAppUsage(appKey)
-            val updatedTime = (existingUsage?.totalTime ?: 0L) + usageTime
-
-            appUsageDao.insertOrUpdate(
-                AppUsageEntity(
-                    packageName = appKey,
-                    totalTime = updatedTime
-                )
-            )
+    /**
+     * Adds a session's time to its app, split at midnight so each day gets the time spent in it
+     */
+    private suspend fun save(session: Session, endMillis: Long): Int = saveLock.withLock {
+        try {
+            splitSessionByDay(session.startMillis, endMillis, ZoneId.systemDefault()).forEach { (day, time) ->
+                val appKey = usageKey(session.packageName, usageDate(day))
+                val existingTime = appUsageDao.getAppUsage(appKey)?.totalTime ?: 0L
+                appUsageDao.insertOrUpdate(AppUsageEntity(packageName = appKey, totalTime = existingTime + time))
+            }
             1
         } catch (e: Exception) {
             Log.e("ScreenTimeRepository", "Error saving app usage: ${e.message}")

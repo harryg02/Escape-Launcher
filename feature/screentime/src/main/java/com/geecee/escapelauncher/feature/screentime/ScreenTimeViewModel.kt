@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.LocalDate
 import java.time.ZoneId
@@ -98,7 +99,9 @@ class ScreenTimeViewModel @Inject constructor(
     )
 
     fun onAppOpened(packageName: String) {
-        screenTimeRepository.onAppOpened(packageName)
+        viewModelScope.launch {
+            screenTimeRepository.onAppOpened(packageName)
+        }
     }
 
     suspend fun onAppClosed(packageName: String) {

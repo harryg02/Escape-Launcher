@@ -4,7 +4,11 @@ import com.geecee.escapelauncher.core.model.AppUsage
 import kotlinx.coroutines.flow.Flow
 
 interface ScreenTimeRepository {
-    fun onAppOpened(packageName: String)
+    /**
+     * Starts counting time for an app opened from the launcher. Ends the count for any app opened
+     * before it that hadn't been closed yet.
+     */
+    suspend fun onAppOpened(packageName: String)
     suspend fun onAppClosed(packageName: String): Int
     fun hasActiveSession(): Boolean
     fun getActiveSessionPackageName(): String?

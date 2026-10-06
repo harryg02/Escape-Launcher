@@ -106,6 +106,16 @@ fun ScreenTimeDashboard(
 
         Spacer(Modifier.height(15.dp))
 
+        // What is and isn't counted, so the numbers aren't read as more exact than they are
+        Text(
+            text = stringResource(R.string.screen_time_counting_note),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 10.dp)
+        )
+
+        Spacer(Modifier.height(15.dp))
+
         SettingsSpacer()
         SettingsSpacer()
     }

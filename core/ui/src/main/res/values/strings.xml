@@ -189,6 +189,7 @@
     <string name="where_the_time_went">Where the time went</string>
     <string name="last_seven_days">Last 7 days</string>
     <string name="no_apps_used">No apps opened yet!</string>
+    <string name="screen_time_counting_note">Time is counted from when you open an app here until you come back home or the screen turns off. If you switch to another app from recents, that time stays with the app you opened.</string>
 
     <string name="accessibility_service_description">Allows the app to turn off the screen.</string>
     <string name="back">Back</string>

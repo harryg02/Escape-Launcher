@@ -41,7 +41,8 @@ data class MainSettingsUiState(
     val allowAnalytics: Boolean = DefaultSettings.ALLOW_ANALYTICS,
     val isDefaultLauncher: Boolean = false,
     val isAccessibilityServiceEnabled: Boolean = false,
-    val askIntention: Boolean = DefaultSettings.ASK_INTENTION
+    val askIntention: Boolean = DefaultSettings.ASK_INTENTION,
+    val askSessionLength: Boolean = DefaultSettings.ASK_SESSION_LENGTH
 )
 
 @HiltViewModel
@@ -85,7 +86,8 @@ class MainSettingsPageViewModel @Inject constructor(
         launcherBehaviorRepository.allowAnalyitics,
         _isDefaultLauncher,
         systemActionsRepository.isAccessibilityServiceEnabled,
-        appPauseSettingsRepository.askIntention
+        appPauseSettingsRepository.askIntention,
+        appPauseSettingsRepository.askSessionLength
     ) { args: Array<Any?> ->
         MainSettingsUiState(
             hapticFeedBackEnabled = args[0] as Boolean,
@@ -121,7 +123,8 @@ class MainSettingsPageViewModel @Inject constructor(
             allowAnalytics = args[18] as Boolean,
             isDefaultLauncher = args[19] as Boolean,
             isAccessibilityServiceEnabled = args[20] as Boolean,
-            askIntention = args[21] as Boolean
+            askIntention = args[21] as Boolean,
+            askSessionLength = args[22] as Boolean
         )
     }.stateIn(
         scope = viewModelScope,
@@ -279,6 +282,12 @@ class MainSettingsPageViewModel @Inject constructor(
     fun setAskIntention(value: Boolean) {
         viewModelScope.launch {
             appPauseSettingsRepository.setAskIntention(value)
+        }
+    }
+
+    fun setAskSessionLength(value: Boolean) {
+        viewModelScope.launch {
+            appPauseSettingsRepository.setAskSessionLength(value)
         }
     }
 

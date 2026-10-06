@@ -54,6 +54,7 @@ object DefaultSettings {
 
     // App pause
     const val ASK_INTENTION = true
+    const val ASK_SESSION_LENGTH = false
 
     // Misc
     const val DOUBLE_TAP_TO_LOCK = true

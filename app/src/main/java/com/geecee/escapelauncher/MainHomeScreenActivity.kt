@@ -39,6 +39,7 @@ import com.geecee.escapelauncher.core.common.configureStatusBar
 import com.geecee.escapelauncher.core.common.formatScreenTime
 import com.geecee.escapelauncher.core.common.hasPermission
 import com.geecee.escapelauncher.core.data.worker.ClearOldDataWorker
+import com.geecee.escapelauncher.core.domain.repository.AppConfiguration
 import com.geecee.escapelauncher.core.theme.EscapeTheme
 import com.geecee.escapelauncher.core.theme.motion.enterTransition
 import com.geecee.escapelauncher.core.theme.motion.exitTransition
@@ -83,6 +84,9 @@ class MainHomeScreenActivity : ComponentActivity() {
 
     @Inject
     lateinit var widgetHostManager: WidgetHostManager
+
+    @Inject
+    lateinit var appConfiguration: AppConfiguration
     private lateinit var screenOffReceiver: ScreenOffReceiver
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -196,6 +200,8 @@ class MainHomeScreenActivity : ComponentActivity() {
         // The user may have changed the default launcher while we were in the background
         mainPagerViewModel.updateLauncherStatus()
 
+        mainPagerViewModel.onHomeResumed()
+
         // Check if we need to update screen time when coming back from an app
         if (screenTimeViewModel.hasActiveSession()) {
             lifecycleScope.launch(Dispatchers.IO) {
@@ -252,8 +258,9 @@ class MainHomeScreenActivity : ComponentActivity() {
     /**
      * Requests the optional runtime permissions (notifications, location for weather) in a single
      * system dialog. Only permissions that this build actually declares in its manifest are
-     * requested (the FOSS flavour declares neither), and the request is made at most once per
-     * process so the user isn't re-prompted every time they return to the home page.
+     * requested, and the request is made at most once per process so the user isn't re-prompted
+     * every time they return to the home page. The FOSS flavour declares notifications only for the
+     * opt-in planned time reminder, which asks for it when it is turned on, so it is not asked here.
      */
     private fun requestRuntimePermissionsOnce() {
         if (runtimePermissionsRequested) return
@@ -276,7 +283,7 @@ class MainHomeScreenActivity : ComponentActivity() {
         }
 
         val wanted = buildList {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !appConfiguration.isFoss) {
                 add(Manifest.permission.POST_NOTIFICATIONS)
             }
             // Android 12+ ignores a FINE request that doesn't also include COARSE

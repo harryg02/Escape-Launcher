@@ -1,9 +1,11 @@
 package com.geecee.escapelauncher.feature.settings.mainpage
 
+import android.Manifest
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.os.Build
 import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -40,6 +42,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.geecee.escapelauncher.feature.settings.SettingsNavKey
 import com.geecee.escapelauncher.core.common.configureStatusBar
+import com.geecee.escapelauncher.core.common.hasPermission
 import com.geecee.escapelauncher.core.ui.R
 import com.geecee.escapelauncher.core.ui.composables.EscapeHeader
 import com.geecee.escapelauncher.core.ui.composables.EscapeSubhead
@@ -100,6 +103,16 @@ fun MainSettingsPage(
     }
 
     val isDefaultLauncher by mainSettingsPageViewModel.isDefaultLauncher.collectAsState()
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            mainSettingsPageViewModel.setAskSessionLength(true)
+        } else {
+            Toast.makeText(context, R.string.notifications_needed, Toast.LENGTH_LONG).show()
+        }
+    }
 
     Box(
         Modifier
@@ -458,9 +471,25 @@ fun MainSettingsPage(
                 SettingsSwitch(
                     label = stringResource(id = R.string.ask_intention),
                     checked = uiState.askIntention,
-                    isBottomOfGroup = true,
                     onCheckedChange = {
                         mainSettingsPageViewModel.setAskIntention(it)
+                    })
+            }
+
+            item(key = "ask_session_length") {
+                SettingsSwitch(
+                    label = stringResource(id = R.string.ask_session_length),
+                    checked = uiState.askSessionLength,
+                    isBottomOfGroup = true,
+                    onCheckedChange = { enabled ->
+                        // The reminder is a notification, so it is only turned on once it can be shown
+                        if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                            !context.hasPermission(Manifest.permission.POST_NOTIFICATIONS)
+                        ) {
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        } else {
+                            mainSettingsPageViewModel.setAskSessionLength(enabled)
+                        }
                     })
             }
 

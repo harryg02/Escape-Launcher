@@ -17,4 +17,8 @@ class AppPauseSettingsRepositoryImpl @Inject constructor(
     override suspend fun setAskIntention(enabled: Boolean) {
         dataStore.edit { it[PreferencesKeys.ASK_INTENTION] = enabled }
     }
+    override val askSessionLength: Flow<Boolean> = dataStore.data.map { it[PreferencesKeys.ASK_SESSION_LENGTH] ?: DefaultSettings.ASK_SESSION_LENGTH }
+    override suspend fun setAskSessionLength(enabled: Boolean) {
+        dataStore.edit { it[PreferencesKeys.ASK_SESSION_LENGTH] = enabled }
+    }
 }

@@ -147,6 +147,20 @@
     <string name="open_app_name">Open %1$s</string>
     <string name="app_pause">App countdown</string>
     <string name="ask_intention">Ask what I\'m opening it for</string>
+    <string name="ask_session_length">Ask how long I plan to use it</string>
+    <string name="session_length_question">For how long?</string>
+    <string name="minutes_short">%1$d min</string>
+    <string name="no_limit">No limit</string>
+    <string name="notifications_needed">Allow notifications to get a reminder when the time is up</string>
+
+    <!-- Reminder when the planned time in an app is up -->
+    <string name="session_cue_channel_name">Planned time reminders</string>
+    <plurals name="session_cue_title">
+        <item quantity="one">The %1$d minute you planned for %2$s is up</item>
+        <item quantity="other">The %1$d minutes you planned for %2$s are up</item>
+    </plurals>
+    <string name="session_cue_intention">You opened it for: %1$s</string>
+    <string name="session_cue_go_home">Tap to go home</string>
 
     <!-- Screen time dashboard -->
     <string name="of_your_day_spent_on_your_phone">Of your day spent on your phone</string>

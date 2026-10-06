@@ -50,6 +50,7 @@ object PreferencesKeys {
 
     //App pause
     val ASK_INTENTION = booleanPreferencesKey(name = "ask_intention")
+    val ASK_SESSION_LENGTH = booleanPreferencesKey(name = "ask_session_length")
 
     //Misc
     val DOUBLE_TAP_TO_LOCK = booleanPreferencesKey(name = "double_tap_to_lock")

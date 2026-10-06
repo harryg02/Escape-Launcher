@@ -23,6 +23,7 @@ import com.geecee.escapelauncher.core.domain.repository.settings.AppPauseSetting
 import com.geecee.escapelauncher.core.domain.repository.settings.OnboardingRepository
 import com.geecee.escapelauncher.core.domain.repository.settings.ScreenTimeSettingsRepository
 import com.geecee.escapelauncher.core.domain.repository.settings.LauncherBehaviorRepository
+import com.geecee.escapelauncher.core.domain.session.SessionCueScheduler
 import com.geecee.escapelauncher.core.domain.system.LockScreenUseCase
 import com.geecee.escapelauncher.core.model.InstalledApp
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -50,7 +51,8 @@ class MainPagerScreenViewModel @Inject constructor(
     private val managedProfileExistsUseCase: ManagedProfileExistsUseCase,
     private val isManagedProfileSupportedUseCase: IsManagedProfileSupportedUseCase,
     private val getIsDefaultLauncherUseCase: GetIsDefaultLauncherUseCase,
-    private val lockScreenUseCase: LockScreenUseCase
+    private val lockScreenUseCase: LockScreenUseCase,
+    private val sessionCueScheduler: SessionCueScheduler
 ) : AndroidViewModel(context as Application) {
     fun managedProfileExists(type: ManagedProfileType): Boolean = managedProfileExistsUseCase(type)
     fun isManagedProfileSupported(type: ManagedProfileType): Boolean = isManagedProfileSupportedUseCase(type)
@@ -75,6 +77,33 @@ class MainPagerScreenViewModel @Inject constructor(
         started = SharingStarted.Eagerly,
         initialValue = DefaultSettings.ASK_INTENTION
     )
+
+    val askSessionLength = appPauseSettingsRepository.askSessionLength.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = DefaultSettings.ASK_SESSION_LENGTH
+    )
+
+    /**
+     * Opens the app the pause was shown for, and if the user planned how long to use it for,
+     * schedules the reminder for when that time is up
+     */
+    fun openAppAfterPause(intention: String?, minutes: Int?, onAppOpened: (String) -> Unit) {
+        val app = currentSelectedApp.value
+        openApp(app = app, overrideChallenge = true, onAppOpened = { packageName ->
+            onAppOpened(packageName)
+            if (minutes != null) {
+                sessionCueScheduler.schedule(app.displayName, minutes, intention)
+            }
+        })
+    }
+
+    /**
+     * The user is back home, so a planned time reminder is no longer needed
+     */
+    fun onHomeResumed() {
+        sessionCueScheduler.cancel()
+    }
 
     private val _isDefaultLauncher = MutableStateFlow(false)
     val isDefaultLauncher: StateFlow<Boolean> = _isDefaultLauncher.asStateFlow()

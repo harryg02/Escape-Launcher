@@ -282,18 +282,20 @@ fun MainPagerScreen(
 
     //Open Challenge
     val askIntention by viewModel.askIntention.collectAsState()
+    val askSessionLength by viewModel.askSessionLength.collectAsState()
     AnimatedVisibility(
         visible = viewModel.showOpenChallenge.value, enter = fadeIn(), exit = fadeOut()
     ) {
         OpenChallenge(
             appName = viewModel.currentSelectedApp.value.displayName,
             askIntention = askIntention,
+            askSessionLength = askSessionLength,
             haptics = LocalHapticFeedback.current,
             hapticsEnabled = hapticFeedbackEnabled,
-            onContinue = { _ ->
-                viewModel.openApp(
-                    app = viewModel.currentSelectedApp.value,
-                    overrideChallenge = true,
+            onContinue = { intention, minutes ->
+                viewModel.openAppAfterPause(
+                    intention = intention,
+                    minutes = minutes,
                     onAppOpened = {
                         screenTimeViewModel.onAppOpened(it)
                     })

@@ -287,6 +287,19 @@ fun MainSettingsPage(
                     onClick = { onNavigate(SettingsNavKey.Widget) })
             }
 
+            item(key = "home_anchor_top_spacer") {
+                SettingsSmallSpacer()
+            }
+
+            item(key = "home_anchor") {
+                SettingsNavigationItem(
+                    label = stringResource(id = R.string.home_anchor),
+                    false,
+                    isTopOfGroup = true,
+                    isBottomOfGroup = true,
+                    onClick = { onNavigate(SettingsNavKey.HomeAnchor) })
+            }
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 item(key = "double_tap_to_lock_top_spacer") {
                     SettingsSmallSpacer()

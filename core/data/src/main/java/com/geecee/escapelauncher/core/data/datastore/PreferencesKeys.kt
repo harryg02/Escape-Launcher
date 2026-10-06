@@ -24,6 +24,8 @@ object PreferencesKeys {
     val FIRST_TIME_HELP = booleanPreferencesKey(name = "first_time_help")
     val HOME_V_ALIGNMENT = stringPreferencesKey(name = "home_v_alignment")
     val HOME_ALIGNMENT = stringPreferencesKey(name = "home_alignment")
+    val HOME_ANCHOR_TEXT = stringPreferencesKey(name = "home_anchor_text")
+    val HOME_ANCHOR_PHONE = stringPreferencesKey(name = "home_anchor_phone")
 
     //Weather
     val WEATHER_APP_PACKAGE = stringPreferencesKey(name = "weather_app_package")

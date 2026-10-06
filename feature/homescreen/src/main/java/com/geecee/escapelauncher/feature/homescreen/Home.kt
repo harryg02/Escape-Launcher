@@ -2,6 +2,7 @@ package com.geecee.escapelauncher.feature.homescreen
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.net.Uri
 import android.provider.AlarmClock
 import android.util.Log
 import android.widget.Toast
@@ -26,6 +27,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -54,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.geecee.escapelauncher.core.common.DefaultSettings
 import com.geecee.escapelauncher.core.common.formatScreenTime
+import com.geecee.escapelauncher.core.model.HomeAnchor
 import com.geecee.escapelauncher.core.model.InstalledApp
 import com.geecee.escapelauncher.core.ui.DefaultSettingsUi
 import com.geecee.escapelauncher.core.ui.composables.Clock
@@ -110,6 +113,7 @@ fun HomeScreen(
     val bottomSheetActions by homeScreenViewModel.bottomSheetActions.collectAsState()
     val shortcutActions by homeScreenViewModel.shortcutActions.collectAsState()
     val showWallpaper by homeScreenViewModel.showWallpaper.collectAsState(initial = false)
+    val homeAnchor by homeScreenViewModel.homeAnchor.collectAsState(initial = HomeAnchor())
 
     val (hour, minute, _) = timeParts
 
@@ -277,6 +281,39 @@ fun HomeScreen(
                                 color = if (showWallpaper) MaterialTheme.colorScheme.primaryFixed else MaterialTheme.colorScheme.primary
                             )
                         }
+                    }
+                }
+            }
+
+            //Anchor the user wrote for themselves
+            if (homeAnchor.isSet) {
+                item {
+                    Column {
+                        Spacer(Modifier.height(10.dp))
+                        GlanceWidget(
+                            text = homeAnchor.text,
+                            icon = if (homeAnchor.hasPhoneNumber) Icons.Default.Call else null,
+                            iconContentDescription = stringResource(R.string.home_anchor_call),
+                            homeAlignment = homeAlignment,
+                            small = true,
+                            onClick = {
+                                if (homeAnchor.hasPhoneNumber) {
+                                    try {
+                                        val intent = Intent(
+                                            Intent.ACTION_DIAL,
+                                            Uri.fromParts("tel", homeAnchor.phoneNumber, null)
+                                        ).apply {
+                                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                        }
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        homeScreenViewModel.logException(e)
+                                    }
+                                }
+                            },
+                            shadow = showWallpaper,
+                            color = if (showWallpaper) MaterialTheme.colorScheme.primaryFixed else MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             }

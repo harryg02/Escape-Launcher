@@ -33,6 +33,7 @@ class NewHomeScreenViewModel @Inject constructor(
     screenTimeSettingsRepository: ScreenTimeSettingsRepository,
     weatherSettingsRepository: WeatherSettingsRepository,
     widgetSettingsRepository: WidgetSettingsRepository,
+    homeAnchorRepository: HomeAnchorRepository,
     private val modifiedAppsRepository: ModifiedAppsRepository,
     getFavoriteAppsUseCase: GetFavoriteAppsUseCase,
     val widgetHostManager: WidgetHostManager,
@@ -61,6 +62,7 @@ class NewHomeScreenViewModel @Inject constructor(
     val firstTimeHelp = onboardingRepository.firstTimeHelp
     val hapticFeedBackEnabled = launcherBehaviorRepository.hapticFeedBackEnabled
     val showWallpaper = appearanceRepository.showWallpaper
+    val homeAnchor = homeAnchorRepository.homeAnchor
 
     val homeAlignment = appearanceRepository.homeAlignment.map { alignment ->
         when (alignment) {

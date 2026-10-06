@@ -74,6 +74,12 @@ abstract class DataModule {
 
     @Binds
     @Singleton
+    abstract fun bindHomeAnchorRepository(
+        impl: HomeAnchorRepositoryImpl
+    ): HomeAnchorRepository
+
+    @Binds
+    @Singleton
     abstract fun bindSettingsManager(
         impl: SettingsManagerImpl
     ): SettingsManager

@@ -34,6 +34,7 @@ import com.geecee.escapelauncher.core.theme.motion.exitTransition
 import com.geecee.escapelauncher.core.ui.R
 import com.geecee.escapelauncher.core.ui.composables.PrivacyPolicyDialog
 import com.geecee.escapelauncher.core.ui.composables.ReorderableSelectionLazyColumn
+import com.geecee.escapelauncher.feature.settings.anchor.HomeAnchorOptions
 import com.geecee.escapelauncher.feature.settings.devoptions.DevOptions
 import com.geecee.escapelauncher.feature.settings.font.ChooseFont
 import com.geecee.escapelauncher.feature.settings.font.FontLicenceDialog
@@ -79,6 +80,9 @@ sealed interface SettingsNavKey : NavKey {
 
     @Serializable
     data object FontLicences : SettingsNavKey
+
+    @Serializable
+    data object HomeAnchor : SettingsNavKey
 }
 
 //
@@ -246,6 +250,9 @@ fun Settings(
                     FontLicenceDialog(context = context) {
                         backStack.removeLastOrNull()
                     }
+                }
+                entry<SettingsNavKey.HomeAnchor> {
+                    HomeAnchorOptions(goBack = { backStack.removeLastOrNull() })
                 }
             }
         )

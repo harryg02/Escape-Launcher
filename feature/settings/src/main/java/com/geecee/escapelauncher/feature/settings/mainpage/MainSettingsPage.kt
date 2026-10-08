@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
@@ -82,11 +83,20 @@ fun MainSettingsPage(
     val uiState by mainSettingsPageViewModel.uiState.collectAsState()
     var showWeatherAppPicker by remember { mutableStateOf(false) }
 
+    // FOSS weather needs location, asked for only when weather is turned on. The Google build asks
+    // at startup instead.
+    val weatherNeedsLocation = mainSettingsPageViewModel.appConfiguration.isFoss
+    var hasLocationPermission by remember {
+        mutableStateOf(context.hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION))
+    }
+
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 mainSettingsPageViewModel.updateLauncherStatus()
+                // Location can be taken away in system settings while the launcher is in the background
+                hasLocationPermission = context.hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -111,6 +121,22 @@ fun MainSettingsPage(
             mainSettingsPageViewModel.setAskSessionLength(true)
         } else {
             Toast.makeText(context, R.string.notifications_needed, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        hasLocationPermission = granted
+        if (granted) {
+            if (uiState.showWeather) {
+                // Saved as on from before location was taken away, so the setting won't change
+                weatherViewModel.forceUpdate()
+            } else {
+                mainSettingsPageViewModel.setShowWeather(true)
+            }
+        } else {
+            Toast.makeText(context, R.string.location_needed_for_weather, Toast.LENGTH_LONG).show()
         }
     }
 
@@ -241,41 +267,55 @@ fun MainSettingsPage(
                 SettingsSmallSpacer()
             }
 
-            if (!mainSettingsPageViewModel.appConfiguration.isFoss) {
-                item(key = "show_weather") {
-                    SettingsSwitch(
-                        label = stringResource(id = R.string.show_weather),
-                        checked = uiState.showWeather,
-                        isTopOfGroup = true,
-                        onCheckedChange = {
+            item(key = "show_weather") {
+                SettingsSwitch(
+                    label = stringResource(id = R.string.show_weather),
+                    // Off while location is missing, as nothing would show
+                    checked = uiState.showWeather && (!weatherNeedsLocation || hasLocationPermission),
+                    isTopOfGroup = true,
+                    onCheckedChange = {
+                        if (it && weatherNeedsLocation && !hasLocationPermission) {
+                            // Turned on once location is allowed, and stays off if it isn't
+                            locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+                        } else {
+                            // WeatherViewModel fetches when this turns on
                             mainSettingsPageViewModel.setShowWeather(it)
-                            if (it) {
-                                weatherViewModel.forceUpdate()
-                            }
-                        })
-                }
+                        }
+                    })
+            }
 
-                item(key = "use_fahrenheit") {
-                    SettingsSwitch(
-                        label = stringResource(id = R.string.use_farenhight),
-                        checked = uiState.useFahrenheit,
-                        onCheckedChange = {
-                            mainSettingsPageViewModel.setUseFahrenheit(it)
-                            weatherViewModel.forceUpdate()
-                        })
-                }
+            item(key = "use_fahrenheit") {
+                SettingsSwitch(
+                    label = stringResource(id = R.string.use_farenhight),
+                    checked = uiState.useFahrenheit,
+                    onCheckedChange = {
+                        // WeatherViewModel fetches again when the unit changes
+                        mainSettingsPageViewModel.setUseFahrenheit(it)
+                    })
+            }
 
-                item(key = "choose_weather_app") {
-                    SettingsNavigationItem(
-                        label = stringResource(id = R.string.choose_weather_app),
-                        false,
-                        isBottomOfGroup = true,
-                        onClick = { showWeatherAppPicker = true })
-                }
+            item(key = "choose_weather_app") {
+                SettingsNavigationItem(
+                    label = stringResource(id = R.string.choose_weather_app),
+                    false,
+                    isBottomOfGroup = true,
+                    onClick = { showWeatherAppPicker = true })
+            }
 
-                item(key = "weather_group_spacer") {
-                    SettingsSmallSpacer()
+            // The Google build doesn't round the location, so this is FOSS only
+            if (weatherNeedsLocation) {
+                item(key = "weather_location_note") {
+                    Text(
+                        text = stringResource(R.string.weather_location_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(start = 10.dp, end = 10.dp, top = 8.dp)
+                    )
                 }
+            }
+
+            item(key = "weather_group_spacer") {
+                SettingsSmallSpacer()
             }
 
             item(key = "widget") {

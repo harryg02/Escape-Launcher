@@ -10,6 +10,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import jakarta.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -30,17 +32,27 @@ class WeatherViewModel @Inject constructor(
 
     private fun startWeatherRefreshLoop() {
         viewModelScope.launch(Dispatchers.IO) {
-            weatherSettingsRepository.useFahrenheit.collect { useFahrenheit ->
-                // Restart the fetch loop whenever the setting changes
-                fetchWeather(useFahrenheit)
-            }
+            combine(
+                weatherSettingsRepository.showWeather,
+                weatherSettingsRepository.useFahrenheit
+            ) { showWeather, useFahrenheit -> showWeather to useFahrenheit }
+                .distinctUntilChanged()
+                .collect { (showWeather, useFahrenheit) ->
+                    // Fetch when weather is turned on or the unit changes. Nothing (not even
+                    // location) is asked for while weather is off.
+                    if (showWeather) {
+                        fetchWeather(useFahrenheit)
+                    }
+                }
         }
 
         viewModelScope.launch(Dispatchers.IO) {
             while (true) {
                 delay(timeMillis = delayTime)
-                val useFahrenheit = weatherSettingsRepository.useFahrenheit.first()
-                fetchWeather(useFahrenheit)
+                if (weatherSettingsRepository.showWeather.first()) {
+                    val useFahrenheit = weatherSettingsRepository.useFahrenheit.first()
+                    fetchWeather(useFahrenheit)
+                }
             }
         }
     }
@@ -61,8 +73,10 @@ class WeatherViewModel @Inject constructor(
 
     fun forceUpdate() {
         viewModelScope.launch(Dispatchers.IO) {
-            val useFahrenheit = weatherSettingsRepository.useFahrenheit.first()
-            fetchWeather(useFahrenheit)
+            if (weatherSettingsRepository.showWeather.first()) {
+                val useFahrenheit = weatherSettingsRepository.useFahrenheit.first()
+                fetchWeather(useFahrenheit)
+            }
         }
     }
 }

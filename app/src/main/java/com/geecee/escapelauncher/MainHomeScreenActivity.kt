@@ -260,7 +260,8 @@ class MainHomeScreenActivity : ComponentActivity() {
      * system dialog. Only permissions that this build actually declares in its manifest are
      * requested, and the request is made at most once per process so the user isn't re-prompted
      * every time they return to the home page. The FOSS flavour declares notifications only for the
-     * opt-in planned time reminder, which asks for it when it is turned on, so it is not asked here.
+     * opt-in planned time reminder, and location only for weather, which is off by default. Each is
+     * asked for when its setting is turned on, so neither is asked here.
      */
     private fun requestRuntimePermissionsOnce() {
         if (runtimePermissionsRequested) return
@@ -286,9 +287,11 @@ class MainHomeScreenActivity : ComponentActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !appConfiguration.isFoss) {
                 add(Manifest.permission.POST_NOTIFICATIONS)
             }
-            // Android 12+ ignores a FINE request that doesn't also include COARSE
-            add(Manifest.permission.ACCESS_COARSE_LOCATION)
-            add(Manifest.permission.ACCESS_FINE_LOCATION)
+            if (!appConfiguration.isFoss) {
+                // Android 12+ ignores a FINE request that doesn't also include COARSE
+                add(Manifest.permission.ACCESS_COARSE_LOCATION)
+                add(Manifest.permission.ACCESS_FINE_LOCATION)
+            }
         }.filter { it in declaredPermissions && !hasPermission(it) }
 
         if (wanted.isNotEmpty()) {

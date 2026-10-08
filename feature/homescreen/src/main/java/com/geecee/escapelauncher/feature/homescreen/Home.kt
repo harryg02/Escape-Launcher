@@ -275,17 +275,14 @@ fun HomeScreen(
                     }
 
                     if (showWeather) {
-                        @Suppress("KotlinConstantConditions", "RedundantSuppression") // This is to stop the IS_FOSS is always true cuz it's a FOSS sync in Android Studio
-                        if (!homeScreenViewModel.isFoss) {
-                            HomeWeatherImpl(
-                                onOpenApp = { packageName ->
-                                    homeScreenViewModel.findApp(packageName)?.let { onAppOpened(it) }
-                                },
-                                alignment = homeAlignment,
-                                shadow = showWallpaper,
-                                color = if (showWallpaper) MaterialTheme.colorScheme.primaryFixed else MaterialTheme.colorScheme.primary
-                            )
-                        }
+                        HomeWeatherImpl(
+                            onOpenApp = { packageName ->
+                                homeScreenViewModel.findApp(packageName)?.let { onAppOpened(it) }
+                            },
+                            alignment = homeAlignment,
+                            shadow = showWallpaper,
+                            color = if (showWallpaper) MaterialTheme.colorScheme.primaryFixed else MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             }

@@ -14,7 +14,8 @@ object DefaultSettings {
     const val SHOW_DATE = true
     const val SHOW_STATUS_BAR = true
     const val SHOW_SCREEN_TIME_HOME = true
-    const val SHOW_WEATHER = true
+    // FOSS asks for location only when the user turns weather on, so it starts off there
+    val SHOW_WEATHER = !BuildConfig.IS_FOSS
     const val USE_FAHRENHEIT = false
     const val SHOW_SCREEN_TIME_APP = true
     const val FIRST_TIME_HELP = true

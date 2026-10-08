@@ -5,7 +5,6 @@ import androidx.compose.ui.Alignment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.geecee.escapelauncher.core.analytics.AnalyticsProxy
-import com.geecee.escapelauncher.core.domain.repository.AppConfiguration
 import com.geecee.escapelauncher.core.common.isMainUserApp
 import com.geecee.escapelauncher.core.domain.apps.*
 import com.geecee.escapelauncher.core.domain.repository.android.AppsRepository
@@ -38,7 +37,6 @@ class NewHomeScreenViewModel @Inject constructor(
     private val modifiedAppsRepository: ModifiedAppsRepository,
     getFavoriteAppsUseCase: GetFavoriteAppsUseCase,
     val widgetHostManager: WidgetHostManager,
-    appConfiguration: AppConfiguration,
     private val getAppActionsUseCase: GetAppActionsUseCase,
     private val getAppShortcutsUseCase: GetAppShortcutsUseCase,
     private val appsRepository: AppsRepository,
@@ -46,8 +44,6 @@ class NewHomeScreenViewModel @Inject constructor(
     private val openAppDetailsUseCase: OpenAppDetailsUseCase,
     private val analyticsProxy: AnalyticsProxy
 ) : ViewModel() {
-    val isFoss = appConfiguration.isFoss
-
     // UI Events
     private val _uiEvent = MutableSharedFlow<HomeUiEvent>()
     val uiEvent = _uiEvent.asSharedFlow()

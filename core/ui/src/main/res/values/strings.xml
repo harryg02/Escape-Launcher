@@ -113,6 +113,8 @@
     <string name="accessibility_not_granted_msg">Please grant accessibility permission in settings</string>
     <string name="launcher_must_be_default_to_pause_or_unpause_work_apps">Launcher must be set as deafault to pause or unpause work apps</string>
     <string name="use_farenhight">Use fahrenheit</string>
+    <string name="weather_location_note">To get the temperature, your location, rounded to about 1 km, is sent to Open-Meteo.</string>
+    <string name="location_needed_for_weather">Allow location access to show the temperature</string>
     <string name="home_anchor">Home anchor</string>
     <string name="home_anchor_description">Keep one thing in view on the home screen: a line to remember, a commitment, or someone to call. Leave it empty to show nothing.</string>
     <string name="home_anchor_text">Text</string>

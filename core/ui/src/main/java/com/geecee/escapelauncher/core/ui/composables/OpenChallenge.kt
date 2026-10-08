@@ -2,6 +2,7 @@ package com.geecee.escapelauncher.core.ui.composables
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,8 +52,12 @@ import kotlin.time.Duration.Companion.seconds
 private const val PAUSE_SECONDS = 5
 private val sessionLengthMinutes = listOf(5, 15, 30)
 internal val pauseDark = Color(0xFF004C4C)
+
+// The lightest point of the background, kept dark enough for white text to pass WCAG AAA (7:1).
+// Checked in OpenChallengeContrastTest
+internal val pauseLight = Color(0xFF196060)
 internal val pauseBackground = Brush.linearGradient(
-    colors = listOf(Color(0xFFB2D8D8), pauseDark),
+    colors = listOf(pauseLight, pauseDark),
     start = Offset(0f, 0f),
     end = Offset(0f, Float.POSITIVE_INFINITY)
 )
@@ -241,14 +246,19 @@ private fun PauseOption(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val shape = RoundedCornerShape(24.dp)
+
+    // Unselected answers are outlined rather than filled, as a light fill under the white text
+    // would take it below AAA contrast
     Text(
         text = label,
         color = if (selected) pauseDark else Color.White,
         style = MaterialTheme.typography.bodySmall,
         textAlign = TextAlign.Center,
         modifier = modifier
-            .clip(RoundedCornerShape(24.dp))
-            .background(if (selected) Color.White else Color.White.copy(alpha = 0.15f))
+            .clip(shape)
+            .background(if (selected) Color.White else Color.Transparent)
+            .border(1.dp, Color.White, shape)
             .selectable(selected = selected, onClick = onClick, role = Role.RadioButton)
             .padding(horizontal = 16.dp, vertical = 10.dp)
     )
@@ -284,6 +294,7 @@ private fun PauseActions(
         TextButton(
             onClick = onContinue,
             enabled = canContinue,
+            // The dimmed countdown is below AAA contrast; WCAG exempts inactive controls from it
             colors = ButtonDefaults.textButtonColors(
                 contentColor = Color.White,
                 disabledContentColor = Color.White.copy(alpha = 0.6f)

@@ -42,11 +42,47 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # 4. Build the FOSS release APK (signed with the debug signing config, see app/build.gradle.kts)
+      # 4. Write the release keystore to the runner's temp dir (never into the repo).
+      #    Fails the job if any signing secret is missing, so a debug-signed APK is never published.
+      - name: Decode release keystore
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          missing=""
+          for name in RELEASE_KEYSTORE_BASE64 RELEASE_KEYSTORE_PASSWORD RELEASE_KEY_ALIAS RELEASE_KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              missing="$missing $name"
+            fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secrets:$missing. Add them under Settings > Secrets and variables > Actions; refusing to publish a debug-signed APK."
+            exit 1
+          fi
+          keystore="$RUNNER_TEMP/release.p12"
+          printf '%s' "$RELEASE_KEYSTORE_BASE64" | tr -d '[:space:]' | base64 --decode > "$keystore"
+          echo "RELEASE_KEYSTORE_FILE=$keystore" >> "$GITHUB_ENV"
+
+      # 5. Version the release. versionCode = run number of this workflow + 100, which only grows
+      #    (re-runs reuse their run's number and can't publish a second release for the same tag)
+      #    and is always above 3, the versionCode of every build before this scheme.
+      #    versionName is the tag without its leading "v".
+      - name: Set release version
+        run: |
+          echo "RELEASE_VERSION_CODE=$((GITHUB_RUN_NUMBER + 100))" >> "$GITHUB_ENV"
+          echo "RELEASE_VERSION_NAME=${TAG#v}" >> "$GITHUB_ENV"
+
+      # 6. Build the FOSS release APK, signed with the release keystore (see app/build.gradle.kts)
       - name: Build with Gradle
+        env:
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: ./gradlew assembleFossRelease
 
-      # 5. Rename the APK so the tag is in the filename
+      # 7. Rename the APK so the tag is in the filename
       - name: Rename APK
         run: |
           apk=$(find app/build/outputs/apk/foss/release -name '*.apk' | head -n 1)
@@ -56,7 +92,19 @@ jobs:
           fi
           mv "$apk" "Escape-Launcher-Foss-$TAG.apk"
 
-      # 6. Create the GitHub Release with the APK attached (tags with a hyphen are prereleases)
+      # 8. Refuse to publish a debug-signed APK (e.g. when re-releasing a tag that predates
+      #    release signing, whose build.gradle.kts ignores the keystore)
+      - name: Verify APK signature
+        run: |
+          build_tools=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -n 1)
+          certs=$("${build_tools}apksigner" verify --print-certs "Escape-Launcher-Foss-$TAG.apk")
+          echo "$certs"
+          if grep -q "CN=Android Debug" <<< "$certs"; then
+            echo "::error::The APK is signed with a debug key; not publishing it." >&2
+            exit 1
+          fi
+
+      # 9. Create the GitHub Release with the APK attached (tags with a hyphen are prereleases)
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

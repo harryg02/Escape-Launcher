@@ -10,6 +10,15 @@ plugins {
 
 val baseVersionCode = "3.0"
 
+// Set only by .github/workflows/release.yml. Local and other CI builds keep versionCode 3,
+// versionName "3.0" and the debug signing config.
+fun releaseEnv(name: String): String? =
+    System.getenv(name)?.takeIf { it.isNotBlank() }
+
+val releaseVersionCode = releaseEnv("RELEASE_VERSION_CODE")?.toInt()
+val appVersionName = releaseEnv("RELEASE_VERSION_NAME") ?: baseVersionCode
+val releaseKeystoreFile = releaseEnv("RELEASE_KEYSTORE_FILE")
+
 android {
     namespace = "com.geecee.escapelauncher"
 
@@ -17,19 +26,34 @@ android {
         applicationId = "com.geecee.escapelauncher"
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 3
-        versionName = baseVersionCode
+        releaseVersionCode?.let { versionCode = it }
+        versionName = appVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
 
-        resValue("string", "app_version", baseVersionCode)
+        resValue("string", "app_version", appVersionName)
         resValue("string", "app_name", "Escape Launcher")
         resValue("string", "app_flavour", "Unknown Flavor")
 
-        buildConfigField("String", "APP_VERSION", "\"$baseVersionCode\"")
+        buildConfigField("String", "APP_VERSION", "\"$appVersionName\"")
         buildConfigField("String", "APP_NAME", "\"Escape Launcher\"")
         buildConfigField("String", "APP_FLAVOUR", "\"Unknown Flavor\"")
+    }
+    signingConfigs {
+        if (releaseKeystoreFile != null) {
+            create("release") {
+                storeFile = file(releaseKeystoreFile)
+                storeType = "PKCS12"
+                storePassword = releaseEnv("RELEASE_KEYSTORE_PASSWORD")
+                    ?: error("RELEASE_KEYSTORE_PASSWORD must be set when RELEASE_KEYSTORE_FILE is set")
+                keyAlias = releaseEnv("RELEASE_KEY_ALIAS")
+                    ?: error("RELEASE_KEY_ALIAS must be set when RELEASE_KEYSTORE_FILE is set")
+                keyPassword = releaseEnv("RELEASE_KEY_PASSWORD")
+                    ?: error("RELEASE_KEY_PASSWORD must be set when RELEASE_KEYSTORE_FILE is set")
+            }
+        }
     }
     buildTypes {
         debug {
@@ -46,7 +70,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "../proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(
+                if (releaseKeystoreFile != null) "release" else "debug"
+            )
         }
     }
 
